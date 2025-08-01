@@ -1,0 +1,74 @@
+/* ChatSection-specific styles */
+
+.chat-container {
+    background-color: #1E1B4B;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid;
+    border-image: linear-gradient(to right, #2DD4BF, #A855F7) 1;
+  }
+  
+  .chat-heading {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2DD4BF;
+    margin-bottom: 1rem;
+  }
+  
+  .message-container, .reply-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .icon-button {
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-left: 8px;
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+  
+  .icon-button.edit {
+    color: #2DD4BF;
+  }
+  
+  .icon-button.edit:hover {
+    color: #14B8A6;
+    transform: scale(1.1);
+  }
+  
+  .icon-button.delete {
+    color: #EC4899;
+  }
+  
+  .icon-button.delete:hover {
+    color: #DB2777;
+    transform: scale(1.1);
+  }
+  
+  .message-form {
+    margin-bottom: 1.5rem;
+  }
+  
+  .message-text {
+    color: #E5E7EB;
+  }
+  
+  .message-timestamp {
+    color: #9CA3AF;
+    font-size: 0.75rem;
+  }
+  
+  .reply-text {
+    color: #D1D5DB;
+  }
+  
+  .post-button {
+    background: linear-gradient(to right, #2DD4BF, #A855F7);
+    margin-top: 10px;
+  }
+  
+  .post-button:hover {
+    background: linear-gradient(to right, #14B8A6, #9333EA);
+  }

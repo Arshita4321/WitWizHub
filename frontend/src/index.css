@@ -1,0 +1,232 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+@import "tailwindcss";
+
+
+
+body {
+  background: linear-gradient(to bottom, #1E1B4B, #0F172A);
+  color: #E5E7EB;
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.bg-gradient-dark {
+  background: linear-gradient(to right, #1E1B4B, #0F172A);
+}
+
+.bg-gradient-accent {
+  background: linear-gradient(to right, #2DD4BF, #A855F7);
+}
+
+.tagline-cursive {
+  font-family: 'Dancing Script', cursive;
+  background: linear-gradient(to right, #2DD4BF, #A855F7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.gradient-text {
+  background: linear-gradient(to right, #2DD4BF, #A855F7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.social-icon {
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.social-icon:hover {
+  transform: scale(1.2);
+  color: #EC4899 !important; /* pink-500 */
+}
+
+.tab-button {
+  background: linear-gradient(to right, #2DD4BF, #A855F7);
+  color: #E5E7EB;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+  background: linear-gradient(to right, #14B8A6, #9333EA);
+}
+
+.tab-button.active {
+  background: #E5E7EB;
+  color: #1E1B4B;
+}
+
+.message-card,
+.question-card {
+  background: linear-gradient(to right, #1E1B4B, #0F172A);
+  border: 1px solid #4B5563;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.message-image,
+.question-image {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.custom-file-input {
+  display: inline-block;
+  background: linear-gradient(to right, #2DD4BF, #A855F7);
+  color: #E5E7EB;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.custom-file-input:hover {
+  background: linear-gradient(to right, #14B8A6, #9333EA);
+}
+
+.custom-file-input input[type="file"] {
+  display: none;
+}
+
+.image-preview-container {
+  position: relative;
+  display: inline-block;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.cancel-image-button {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #EC4899; /* pink-500 */
+  color: #E5E7EB;
+  border-radius: 50%;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.cancel-image-button:hover {
+  background: #DB2777; /* pink-600 */
+}
+
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.image-modal-content {
+  background: #1E1B4B;
+  border: 1px solid #4B5563;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  position: relative;
+  max-width: 800px;
+  max-height: 600px;
+  width: 90%;
+  height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-modal-content img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 0.25rem;
+}
+
+.image-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #FFFFFF; /* white */
+  color: #1E1B4B;
+  border-radius: 50%;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.image-modal-close:hover {
+  background: #D1D5DB; /* gray-300 */
+}
+
+.flex-grow {
+  display: block;
+  visibility: visible;
+  min-height: 100vh;
+}
+
+/* Ensure footer and header links respect Tailwind classes */
+footer a,
+header a,
+footer a:link,
+header a:link,
+footer a:visited,
+header a:visited {
+  color:#2DD4BF;
+  text-decoration: none;
+}
+
+footer a:hover, header a:hover, .vheader ul li:hover{
+  color: #DB2777;
+}
+
+/* Ensure footer and header headings are styled correctly */
+footer h3,
+header h1 {
+  font-size: 1.25rem !important; /* text-xl */
+  font-weight: 700 !important; /* font-bold */
+  color: #2DD4BF !important; /* text-teal-400 */
+  margin-bottom: 1rem !important; /* mb-4 */
+}
+
+nav .nav-link a{
+  text-decoration: none !important;
+  color: #2DD4BF;
+}
+
+.vheader h1 {
+  color:#2DD4BF;
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.vheader ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.vheader ul li {
+  display: inline-flex;
+}
+
+
+
+
+.bookshelf-texture {
+  background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+}
