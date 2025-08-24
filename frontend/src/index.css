@@ -1,8 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
 @import "tailwindcss";
 
-
-
 body {
   background: linear-gradient(to bottom, #1E1B4B, #0F172A);
   color: #E5E7EB;
@@ -11,7 +9,7 @@ body {
 }
 
 .bg-gradient-dark {
-  background: linear-gradient(to right, #1E1B4B, #0F172A);
+  background: linear-gradient(to bottom, #1E1B4B, #0F172A); /* Aligned with body */
 }
 
 .bg-gradient-accent {
@@ -174,22 +172,22 @@ body {
   min-height: 100vh;
 }
 
-/* Ensure footer and header links respect Tailwind classes */
 footer a,
 header a,
 footer a:link,
 header a:link,
 footer a:visited,
 header a:visited {
-  color:#2DD4BF;
+  color: #2DD4BF;
   text-decoration: none;
 }
 
-footer a:hover, header a:hover, .vheader ul li:hover{
+footer a:hover,
+header a:hover,
+.vheader ul li:hover {
   color: #DB2777;
 }
 
-/* Ensure footer and header headings are styled correctly */
 footer h3,
 header h1 {
   font-size: 1.25rem !important; /* text-xl */
@@ -198,13 +196,13 @@ header h1 {
   margin-bottom: 1rem !important; /* mb-4 */
 }
 
-nav .nav-link a{
+nav .nav-link a {
   text-decoration: none !important;
   color: #2DD4BF;
 }
 
 .vheader h1 {
-  color:#2DD4BF;
+  color: #2DD4BF;
   font-size: 1.8rem;
   font-weight: bold;
 }
@@ -221,9 +219,6 @@ nav .nav-link a{
 .vheader ul li {
   display: inline-flex;
 }
-
-
-
 
 .bookshelf-texture {
   background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80');

@@ -13,12 +13,16 @@ const getMessages = async (req, res) => {
 const createMessage = async (req, res) => {
   try {
     const { text, images, name } = req.body;
+    if (!text || text.trim() === '') {
+      return res.status(400).json({ message: 'Text is required', success: false });
+    }
     const message = new Message({
-      userId: req.user.userId,
-      name,
+      userId: req.user.userId, // UUID from JWT
+      sender: 'user', // Hardcoded as 'user'
       text,
-      images,
-      timestamp: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      name,
+      images: images || [],
+      timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
       replies: [],
     });
     await message.save();
@@ -74,12 +78,17 @@ const createReply = async (req, res) => {
       return res.status(404).json({ message: 'Message not found', success: false });
     }
 
+    const { text, name, images } = req.body;
+    if (!text || text.trim() === '') {
+      return res.status(400).json({ message: 'Reply text is required', success: false });
+    }
+
     const reply = {
-      userId: req.user.userId,
-      name: req.body.name,
-      text: req.body.text,
-      images: req.body.images || [],
-      timestamp: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      userId: req.user.userId, // UUID from JWT
+      name,
+      text,
+      images: images || [],
+      timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
     };
     message.replies.push(reply);
     await message.save();

@@ -1,22 +1,21 @@
-// backend/Models/Message.js
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 
-const messageSchema = new Schema({
-  userId: { type: String, required: true }, // UUID from User
-  name: { type: String, required: true }, // User's display name
-  text: { type: String, default: '' },
-  images: [{ type: String }], // Array of image URLs or base64 strings
-  timestamp: { type: String, required: true },
-  replies: [
-    {
-      userId: { type: String, required: true },
-      name: { type: String, required: true },
-      text: { type: String, default: '' },
-      images: [{ type: String }],
-      timestamp: { type: String, required: true },
-    },
-  ],
+const chatMessageSchema = new mongoose.Schema({
+  userId: { type: String, required: true }, // Changed from ObjectId to String
+  sender: { type: String, enum: ['user', 'bot'], required: true },
+  text: { type: String, required: true },
+  videoLink: { type: String },
+  clarification: { type: String },
+  responseType: { type: String },
+  error: { type: Boolean, default: false },
+  timestamp: { type: Date, default: () => new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }) },
+  replies: [{ // Explicitly define replies subdocument schema
+    userId: { type: String, required: true }, // Changed to String
+    name: { type: String, required: true },
+    text: { type: String, required: true },
+    images: [{ type: String }],
+    timestamp: { type: String, required: true },
+  }],
 });
 
-module.exports = mongoose.model('message', messageSchema);
+module.exports = mongoose.model('ChatMessage', chatMessageSchema);

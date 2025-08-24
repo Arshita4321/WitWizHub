@@ -1,0 +1,187 @@
+/* Import Font Awesome for icons */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+.profile-container {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #1E1B4B, #0F172A); /* Match index.css body gradient */
+  overflow: hidden;
+  color: #E5E7EB;
+  font-family: Arial, sans-serif;
+}
+
+.profile-card {
+  background: rgba(30, 27, 75, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(45, 212, 191, 0.2);
+  transition: border 0.3s ease;
+  position: relative;
+  z-index: 10; /* Above watermarks */
+}
+
+.profile-card:hover {
+  border: 1px solid rgba(45, 212, 191, 0.5);
+}
+
+.profile-card h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #2DD4BF;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.avatar {
+  width: 7rem;
+  height: 7rem;
+  background: linear-gradient(135deg, #A855F7, #2DD4BF);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.user-details h2 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #E5E7EB;
+}
+
+.user-details p {
+  font-size: 1.125rem;
+  color: #A855F7;
+}
+
+.add-plan-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(to right, #2DD4BF, #A855F7);
+  color: #1E1B4B;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+}
+
+.add-plan-btn:hover {
+  background: linear-gradient(to right, #14B8A6, #9333EA);
+  box-shadow: 0 0 15px rgba(45, 212, 191, 0.5);
+}
+
+.study-plans-card {
+  background: rgba(30, 27, 75, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  padding: 2rem;
+  border: 1px solid rgba(45, 212, 191, 0.2);
+  transition: border 0.3s ease;
+  position: relative;
+  z-index: 10; /* Above watermarks */
+}
+
+.study-plans-card:hover {
+  border: 1px solid rgba(45, 212, 191, 0.5);
+}
+
+.study-plans-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2DD4BF;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  background: linear-gradient(to right, #2DD4BF, #A855F7);
+  color: #E5E7EB;
+  transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+  background: linear-gradient(to right, #14B8A6, #9333EA);
+}
+
+.tab-button.active {
+  background: #E5E7EB;
+  color: #1E1B4B;
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.5);
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.plan-card {
+  background: rgba(44, 42, 102, 0.8);
+  backdrop-filter: blur(5px);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  transition: all 0.3s ease;
+}
+
+.plan-card:hover {
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 15px rgba(45, 212, 191, 0.3);
+  transform: scale(1.03);
+}
+
+.plan-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2DD4BF;
+  margin-bottom: 0.5rem;
+}
+
+.plan-card p {
+  color: #E5E7EB;
+  margin-bottom: 0.75rem;
+}
+
+.progress-bar {
+  width: 100%;
+  background: #1E1B4B;
+  border-radius: 9999px;
+  height: 0.625rem;
+  margin-bottom: 0.75rem;
+}
+
+.progress-bar-inner {
+  background: linear-gradient(to right, #2DD4BF, #A855F7);
+  height: 0.625rem;
+  border-radius: 9999px;
+  transition: width 0.5s ease-out;
+}
+
+.plan-card p.text-sm {
+  color: #A855F7;
+  font-size: 0.875rem;
+}
