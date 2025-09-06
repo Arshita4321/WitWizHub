@@ -11,6 +11,8 @@ const userSchema = new mongoose.Schema({
   googleRefreshToken: { type: String }, // For token refresh
   isPremium: { type: Boolean, default: false },
   premiumUntil: { type: Date, default: null },
+  resetPasswordToken: { type: String }, // Added for password reset
+  resetPasswordExpires: { type: Date }, // Added for token expiration
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

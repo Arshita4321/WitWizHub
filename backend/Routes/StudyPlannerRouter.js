@@ -21,6 +21,7 @@ const {
   updateTopic,
   deleteTopic,
   deleteGoogleEvent,
+  getUpcomingReminders,
 } = require('../Controllers/StudyPlannerController');
 
 router.get('/google', authMiddleware, googleAuth);
@@ -35,5 +36,6 @@ router.post('/subjects/:subjectId/topics', authMiddleware, topicValidation, addT
 router.put('/subjects/:subjectId/topics/:topicId', authMiddleware, updateTopicValidation, updateTopic);
 router.delete('/subjects/:subjectId/topics/:topicId', authMiddleware, deleteTopic);
 router.delete('/google-calendar/:eventId', authMiddleware, deleteGoogleEvent);
+router.get('/reminders/upcoming', authMiddleware, getUpcomingReminders);
 
 module.exports = router;

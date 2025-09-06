@@ -48,14 +48,6 @@ const logger = winston.createLogger({
   ],
 });
 
-// Debug: Log environment variables
-console.log('PORT:', process.env.PORT);
-console.log('MONGO_URL:', process.env.MONGO_URL);
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
-console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID);
-console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET);
-console.log('GEMINI_API_KEY:', process.env.GEMINI_API_KEY);
-
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URL)
   .then(() => {
@@ -68,7 +60,7 @@ mongoose.connect(process.env.MONGO_URL)
 // Rate limiters
 const userObjectIdLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Allow 100 requests per window per IP
+  max: 100,
   message: 'Too many requests to fetch user ID, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -89,12 +81,18 @@ app.use(cors({
   allowedHeaders: ['Authorization', 'Content-Type'],
   credentials: true
 }));
-app.use(express.json());
 app.use(bodyParser.json());
-app.use('/api/game/user-object-id', userObjectIdLimiter); // Specific rate limiter for user-object-id
-app.use(generalLimiter); // General rate limiter for other routes
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    logger.error('Invalid JSON payload:', { url: req.url, body: err.body });
+    return res.status(400).json({ success: false, message: 'Invalid JSON payload' });
+  }
+  next(err);
+});
+app.use('/api/game/user-object-id', userObjectIdLimiter);
+app.use(generalLimiter);
 app.use((req, res, next) => {
-  logger.info(`Request: ${req.method} ${req.url}`);
+  logger.info(`Request: ${req.method} ${req.url}`, { body: req.body });
   next();
 });
 
@@ -132,6 +130,12 @@ cron.schedule('0 0 * * *', async () => {
   } catch (err) {
     logger.error('Cron reminder error:', { error: err.message });
   }
+});
+
+// General error handler
+app.use((err, req, res, next) => {
+  logger.error('Server error:', { error: err.message, stack: err.stack });
+  res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
 const PORT = process.env.PORT || 3000;

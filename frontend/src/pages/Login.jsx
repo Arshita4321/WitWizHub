@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { handleError, handleSuccess } from "../utils";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { motion } from 'framer-motion';
-import { TextField, Button } from '@mui/material';
+import { TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
+import { handleError, handleSuccess } from "../utils";
 
 function Login() {
   const [loginInfo, setLoginInfo] = useState({
@@ -12,7 +10,11 @@ function Login() {
     password: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,194 +32,438 @@ function Login() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setLoginInfo((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    
     const { email, password } = loginInfo;
-    if (!email || !password) {
-      handleError('Please enter your credentials');
-      setError('Please fill all the fields');
+    
+    // Clear previous errors
+    setError('');
+    
+    // Validate inputs
+    if (!email?.trim() || !password?.trim()) {
+      const errorMsg = 'Please fill in all fields';
+      handleError(errorMsg);
+      setError(errorMsg);
       return;
     }
 
+    if (!validateEmail(email.trim())) {
+      const errorMsg = 'Please enter a valid email address';
+      handleError(errorMsg);
+      setError(errorMsg);
+      return;
+    }
+
+    setLoading(true);
+
     try {
+      const payload = {
+        email: email.trim().toLowerCase(),
+        password: password
+      };
+
+      console.log('Login payload:', payload);
+
       const response = await fetch('http://localhost:3000/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(loginInfo),
+        body: JSON.stringify(payload),
       });
+
       const data = await response.json();
       console.log('Login response:', data);
-      const { success, message, jwtToken, name, userId, error } = data;
 
-      if (success) {
-        localStorage.setItem('jwtToken', jwtToken);
-        localStorage.setItem('name', name);
-        localStorage.setItem('userId', userId);
+      if (data.success) {
+        // Store user data
+        localStorage.setItem('jwtToken', data.jwtToken);
+        localStorage.setItem('name', data.name);
+        localStorage.setItem('userId', data.userId);
+        
         console.log('localStorage after login:', {
           jwtToken: localStorage.getItem('jwtToken'),
           name: localStorage.getItem('name'),
           userId: localStorage.getItem('userId')
         });
-        handleSuccess(message);
-        const from = location.state?.from?.pathname || '/home';
-        console.log('Login handleLogin - Redirecting to:', from);
-        navigate(from, { replace: true });
-      } else if (error) {
-        const details = error?.details?.[0]?.message || 'Login Failed';
-        handleError(details);
-        setError(details);
-      } else {
-        handleError(message || 'Invalid Credentials');
-        setError(message || 'Invalid Credentials');
-      }
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login Request Failed');
+        handleSuccess(data.message);
+        
+        // Redirect to intended page or home
+        const from = location.state?.from?.pathname || '/home';
+        console.log('Login success - Redirecting to:', from);
+        navigate(from, { replace: true });
+      } else {
+        const errorMsg = data.message || 'Login failed';
+        handleError(errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
-      handleError(err.message || 'Something went wrong');
-      setError(err.message || 'Something went wrong');
       console.error('Login error:', err);
+      const errorMsg = 'Unable to connect to server. Please try again.';
+      handleError(errorMsg);
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    
+    const trimmedEmail = forgotPasswordEmail.trim();
+    console.log('Forgot Password email:', trimmedEmail);
+    
+    if (!trimmedEmail) {
+      const errorMsg = 'Please enter your email address';
+      handleError(errorMsg);
+      setError(errorMsg);
+      return;
+    }
+
+    if (!validateEmail(trimmedEmail)) {
+      const errorMsg = 'Please enter a valid email address';
+      handleError(errorMsg);
+      setError(errorMsg);
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    setError('');
+
+    try {
+      const payload = { email: trimmedEmail.toLowerCase() };
+      console.log('Forgot Password payload:', payload);
+
+      const response = await fetch('http://localhost:3000/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      console.log('Forgot Password response:', data);
+
+      if (data.success) {
+        handleSuccess(data.message);
+        setShowForgotPassword(false);
+        setForgotPasswordEmail('');
+        setError('');
+      } else {
+        const errorMsg = data.message || 'Failed to send reset email';
+        handleError(errorMsg);
+        setError(errorMsg);
+      }
+    } catch (err) {
+      console.error('Forgot Password error:', err);
+      const errorMsg = 'Unable to connect to server. Please try again.';
+      handleError(errorMsg);
+      setError(errorMsg);
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
+  const handleForgotPasswordClose = () => {
+    setShowForgotPassword(false);
+    setForgotPasswordEmail('');
+    setError('');
+  };
+
   return (
-    <>
-      <section className="min-h-screen bg-gradient-dark flex items-center justify-center py-12 px-4">
-        <motion.div
-          className="w-full max-w-md bg-gray-800 rounded-xl shadow-2xl p-8 border border-gradient-accent relative"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+    <section className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-12 px-4">
+      <motion.div
+        className="w-full max-w-md bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-2xl p-8 border border-purple-500/30 relative"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
+        <motion.h1
+          className="text-4xl font-bold text-teal-400 mb-6 text-center tracking-tight"
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          style={{ fontFamily: "'Dancing Script', cursive" }}
         >
-          <motion.h1
-            className="text-4xl font-bold text-teal-400 mb-6 text-center tracking-tight"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+          Welcome Back
+        </motion.h1>
+
+        {error && (
+          <motion.div
+            className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-6 text-center"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
           >
-            Welcome Back
-          </motion.h1>
+            {error}
+          </motion.div>
+        )}
 
-          {error && (
-            <motion.p
-              className="text-pink-500 mb-6 text-center font-medium"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              {error}
-            </motion.p>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-6">
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                type="email"
-                value={loginInfo.email}
-                onChange={handleChange}
-                variant="outlined"
-                required
-                InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                InputProps={{
-                  style: {
-                    color: '#E5E7EB',
-                    backgroundColor: '#1E1B4B',
-                    borderRadius: '8px',
-                  },
-                }}
-              />
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }} style={{ position: 'relative' }}>
-              <TextField
-                fullWidth
-                label="Password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={loginInfo.password}
-                onChange={handleChange}
-                variant="outlined"
-                required
-                InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                InputProps={{
-                  style: {
-                    color: '#E5E7EB',
-                    backgroundColor: '#1E1B4B',
-                    borderRadius: '8px',
-                  },
-                }}
-              />
-              <i
-                className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}
-                onClick={togglePasswordVisibility}
-                style={{
-                  position: 'absolute',
-                  right: '15px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  cursor: 'pointer',
+        <form onSubmit={handleLogin} className="space-y-6">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
+            <TextField
+              fullWidth
+              label="Email"
+              name="email"
+              type="email"
+              value={loginInfo.email}
+              onChange={handleChange}
+              variant="outlined"
+              required
+              disabled={loading}
+              InputLabelProps={{ 
+                style: { color: '#E5E7EB' } 
+              }}
+              InputProps={{
+                style: {
                   color: '#E5E7EB',
-                  fontSize: '1.2rem'
-                }}
-              />
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{
-                  background: 'linear-gradient(to right, #2DD4BF, #A855F7)',
+                  backgroundColor: '#1E1B4B',
                   borderRadius: '8px',
-                  padding: '12px',
-                  fontSize: '1.1rem',
-                  fontWeight: 'bold',
-                  textTransform: 'none',
-                  marginBottom: '12px',
-                  '&:hover': {
-                    background: 'linear-gradient(to right, #14B8A6, #9333EA)',
-                    transform: 'scale(1.02)',
+                },
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: '#6B7280',
                   },
-                }}
-              >
-                <span className="text-white">Login</span>
-              </Button>
-            </motion.div>
-          </form>
+                  '&:hover fieldset': {
+                    borderColor: '#2DD4BF',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#2DD4BF',
+                  },
+                },
+              }}
+            />
+          </motion.div>
 
-          <motion.p
-            className="mt-6 text-center text-gray-400 text-sm"
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }} style={{ position: 'relative' }}>
+            <TextField
+              fullWidth
+              label="Password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={loginInfo.password}
+              onChange={handleChange}
+              variant="outlined"
+              required
+              disabled={loading}
+              InputLabelProps={{ 
+                style: { color: '#E5E7EB' } 
+              }}
+              InputProps={{
+                style: {
+                  color: '#E5E7EB',
+                  backgroundColor: '#1E1B4B',
+                  borderRadius: '8px',
+                },
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: '#6B7280',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#2DD4BF',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#2DD4BF',
+                  },
+                },
+              }}
+            />
+            <i
+              className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}
+              onClick={togglePasswordVisibility}
+              style={{
+                position: 'absolute',
+                right: '15px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                cursor: 'pointer',
+                color: '#E5E7EB',
+                fontSize: '1.2rem',
+                pointerEvents: loading ? 'none' : 'auto',
+                opacity: loading ? 0.5 : 1,
+              }}
+            />
+          </motion.div>
+
+          <motion.div
+            className="text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
           >
-            Don't have an account?{' '}
-            <NavLink
-              to="/signup"
-              className={({ isActive }) =>
-                `text-teal-400 hover:text-pink-500 font-medium transition-colors relative z-10 ${isActive ? 'text-pink-500' : ''}`
-              }
+            <button
+              type="button"
+              className="text-teal-400 hover:text-pink-500 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setShowForgotPassword(true)}
+              disabled={loading}
             >
-              Sign Up
-            </NavLink>
-          </motion.p>
-        </motion.div>
-      </section>
-      <ToastContainer />
-    </>
+              Forgot Password?
+            </button>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={loading}
+              sx={{
+                background: loading ? '#6B7280' : 'linear-gradient(to right, #2DD4BF, #A855F7)',
+                borderRadius: '8px',
+                padding: '12px',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                textTransform: 'none',
+                marginBottom: '12px',
+                '&:hover': {
+                  background: loading ? '#6B7280' : 'linear-gradient(to right, #14B8A6, #9333EA)',
+                  transform: loading ? 'none' : 'scale(1.02)',
+                },
+                '&:disabled': {
+                  background: '#6B7280',
+                  color: '#9CA3AF',
+                },
+              }}
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <CircularProgress size={20} sx={{ color: '#9CA3AF' }} />
+                  <span className="text-gray-300">Signing in...</span>
+                </div>
+              ) : (
+                <span className="text-white">Login</span>
+              )}
+            </Button>
+          </motion.div>
+        </form>
+
+        <motion.p
+          className="mt-6 text-center text-gray-400 text-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+        >
+          Don't have an account?{' '}
+          <NavLink
+            to="/signup"
+            className={({ isActive }) =>
+              `text-teal-400 hover:text-pink-500 font-medium transition-colors relative z-10 ${isActive ? 'text-pink-500' : ''}`
+            }
+          >
+            Sign Up
+          </NavLink>
+        </motion.p>
+      </motion.div>
+
+      <Dialog
+        open={showForgotPassword}
+        onClose={handleForgotPasswordClose}
+        PaperProps={{
+          style: {
+            backgroundColor: '#1E1B4B',
+            color: '#E5E7EB',
+            borderRadius: '12px',
+            border: '2px solid transparent',
+            borderImage: 'linear-gradient(to right, #2DD4BF, #A855F7) 1',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+            minWidth: '400px',
+          },
+        }}
+      >
+        <DialogTitle style={{ 
+          fontFamily: "'Dancing Script', cursive", 
+          color: '#2DD4BF', 
+          textAlign: 'center',
+          fontSize: '1.5rem' 
+        }}>
+          Reset Your Password
+        </DialogTitle>
+        <DialogContent>
+          <p className="text-gray-300 text-sm mb-4 text-center">
+            Enter your email address and we'll send you a link to reset your password.
+          </p>
+          <TextField
+            fullWidth
+            label="Enter your email"
+            type="email"
+            value={forgotPasswordEmail}
+            onChange={(e) => setForgotPasswordEmail(e.target.value)}
+            variant="outlined"
+            margin="normal"
+            disabled={forgotPasswordLoading}
+            InputLabelProps={{ style: { color: '#E5E7EB' } }}
+            InputProps={{
+              style: {
+                color: '#E5E7EB',
+                backgroundColor: '#0F172A',
+                borderRadius: '8px',
+              },
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: '#6B7280',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#2DD4BF',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#2DD4BF',
+                },
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions style={{ padding: '16px 24px' }}>
+          <Button
+            onClick={handleForgotPasswordClose}
+            disabled={forgotPasswordLoading}
+            style={{ color: '#EC4899' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleForgotPassword}
+            disabled={forgotPasswordLoading}
+            style={{
+              background: forgotPasswordLoading ? '#6B7280' : 'linear-gradient(to right, #2DD4BF, #A855F7)',
+              color: '#E5E7EB',
+              borderRadius: '8px',
+              minWidth: '120px',
+            }}
+          >
+            {forgotPasswordLoading ? (
+              <div className="flex items-center gap-2">
+                <CircularProgress size={16} sx={{ color: '#9CA3AF' }} />
+                <span>Sending...</span>
+              </div>
+            ) : (
+              'Send Reset Link'
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </section>
   );
 }
 

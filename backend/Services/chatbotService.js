@@ -205,7 +205,7 @@ async function getCurrentWeather(region) {
   if (!region) {
     return {
       response: 'I need a valid region or city to check the weather.',
-      clarification: 'Please provide a specific region or city (e.g., Delhi or Hamirpur).',
+      clarification: 'Please provide a specific region or city (e.g., Delhi etc.).',
     };
   }
 
@@ -221,7 +221,7 @@ async function getCurrentWeather(region) {
   if (!location || !location.lat || !location.lon) {
     return {
       response: 'I could not find the specified city or region. Please try with a different name.',
-      clarification: 'Please provide a valid region or city (e.g., Delhi or Hamirpur).',
+      clarification: 'Please provide a valid region or city (e.g., Delhi etc.).',
     };
   }
 
@@ -368,7 +368,7 @@ async function generateChatbotResponse(question, userId, chatId, title, saveHist
       if (!region) {
         response.type = 'clarification';
         response.response = 'I need a region or city to check the weather.';
-        response.clarification = 'Please provide a specific region or city (e.g., Delhi or Hamirpur).';
+        response.clarification = 'Please provide a specific region or city (e.g., Delhi ).';
       } else {
         const weatherData = await getCurrentWeather(region);
         response.type = 'weather';

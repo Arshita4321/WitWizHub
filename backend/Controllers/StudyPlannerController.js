@@ -520,6 +520,40 @@ const deleteGoogleEvent = async (req, res) => {
   }
 };
 
+// In StudyPlannerController.js
+
+const getUpcomingReminders = async (req, res) => {
+  try {
+    const now = new Date();
+    const threeDaysLater = new Date();
+    threeDaysLater.setDate(now.getDate() + 3);
+
+    // Fetch all subjects of the user
+    const subjects = await StudyPlanSubject.find({ userId: req.user.userId });
+
+    // Filter topics whose deadlines are within 3 days and not completed
+    const upcomingTopics = [];
+    subjects.forEach(subject => {
+      subject.topics.forEach(topic => {
+        if (!topic.completed && topic.endTime && topic.endTime >= now && topic.endTime <= threeDaysLater) {
+          upcomingTopics.push({
+            subjectName: subject.name,
+            topicName: topic.name,
+            deadline: topic.endTime,
+            googleEventId: topic.googleEventId,
+          });
+        }
+      });
+    });
+
+    res.status(200).json({ upcomingTopics });
+  } catch (err) {
+    console.error('Get upcoming reminders error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+
 module.exports = {
   googleAuth,
   googleCallback,
@@ -533,4 +567,5 @@ module.exports = {
   updateTopic,
   deleteTopic,
   deleteGoogleEvent,
+  getUpcomingReminders,
 };

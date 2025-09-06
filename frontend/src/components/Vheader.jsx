@@ -10,6 +10,7 @@ import ContactMailIcon from '@mui/icons-material/ContactMail';
 import CloseIcon from '@mui/icons-material/Close';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import { motion } from 'framer-motion';
 import { handleError } from '../utils';
 
@@ -80,7 +81,9 @@ function Vheader({ isOpen, toggleVerticalHeader }) {
             { path: '/notes', icon: <NoteIcon className="mr-2" />, label: 'My Notes' },
             { path: '/forum', icon: <ForumIcon className="mr-2" />, label: 'Conversation Forum' },
             { path: '/quiz', icon: <QuizIcon className="mr-2" />, label: 'Quiz' },
+            { path: '/game', icon: <SportsEsportsIcon className="mr-2" />, label: 'Game Room' },
             { path: '/contact', icon: <ContactMailIcon className="mr-2" />, label: 'Contact Us' },
+            
             ...(isAuthenticated
               ? [
                   {

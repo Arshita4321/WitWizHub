@@ -13,7 +13,7 @@ function Carousel() {
       link: '/study-planner',
     },
     {
-      image: 'https://img.gamepix.com/games/12313/cover/12313.png?w=1200&ar=16:10',
+      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNU2RKT6UPcAKmhgVwUHCvd7o_pb9XZqMx1A&s',
       title: 'Test Your Knowledge',
       description: 'Engage with interactive quizzes and games.',
       cta: 'Take a Quiz',

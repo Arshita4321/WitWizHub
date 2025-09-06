@@ -298,13 +298,13 @@ const initializeGameSocket = (io) => {
           }
         } catch (error) {
           attempt++;
-          if (error.message.includes('No matching document found') && attempt < maxRetries) {
-            logger.warn(`Version conflict detected, retrying startGame (attempt ${attempt + 1})`, { roomId, userId: socket.userId });
+          if ((error.message.includes('No matching document found') || error.message.includes('Write conflict')) && attempt < maxRetries) {
+            logger.warn(`Conflict detected, retrying startGame (attempt ${attempt})`, { roomId, userId: socket.userId });
             await new Promise(resolve => setTimeout(resolve, 100 * attempt));
             continue;
           }
 
-          logger.error('Error starting game', { roomId, userId: socket.userId, attempt: attempt + 1, error: error.message });
+          logger.error('Error starting game', { roomId, userId: socket.userId, attempt: attempt, error: error.message });
           socket.emit('error', { message: 'Failed to start game: ' + error.message });
           io.to(roomId).emit('loadingComplete');
           if (callback) callback({ error: 'Failed to start game: ' + error.message });
@@ -314,424 +314,469 @@ const initializeGameSocket = (io) => {
     });
 
     socket.on('submitAnswer', async ({ roomId, answer }, callback) => {
-      try {
-        logger.info('Received submitAnswer event', { roomId, userId: socket.userId, answer });
-        io.to(roomId).emit('loading', { message: 'Processing answer...' });
+      const maxRetries = 3;
+      let attempt = 0;
 
-        if (!socket.userId) {
-          logger.error('No userId on socket', { roomId });
-          socket.emit('error', { message: 'User not authenticated' });
-          if (callback) callback({ error: 'User not authenticated' });
-          io.to(roomId).emit('loadingComplete');
-          return;
-        }
-
-        const session = await mongoose.startSession();
-        session.startTransaction();
-
+      while (attempt < maxRetries) {
         try {
-          const quizRoom = await QuizRoom.findOne({ roomId }).session(session);
-          if (!quizRoom || quizRoom.gameStatus !== 'in_progress') {
-            logger.warn('Invalid answer submission', { roomId, userId: socket.userId, gameStatus: quizRoom?.gameStatus });
-            socket.emit('error', { message: 'Game not in progress' });
-            if (callback) callback({ error: 'Game not in progress' });
-            await session.abortTransaction();
-            session.endSession();
+          logger.info('Received submitAnswer event', { roomId, userId: socket.userId, answer });
+          io.to(roomId).emit('loading', { message: 'Processing answer...' });
+
+          if (!socket.userId) {
+            logger.error('No userId on socket', { roomId });
+            socket.emit('error', { message: 'User not authenticated' });
+            if (callback) callback({ error: 'User not authenticated' });
             io.to(roomId).emit('loadingComplete');
             return;
           }
 
-          const user = await User.findById(socket.userId).session(session);
-          if (!user) {
-            logger.warn('User not found', { userId: socket.userId });
-            socket.emit('error', { message: 'User not found' });
-            if (callback) callback({ error: 'User not found' });
-            await session.abortTransaction();
-            session.endSession();
-            io.to(roomId).emit('loadingComplete');
-            return;
-          }
+          const session = await mongoose.startSession();
+          session.startTransaction();
 
-          const currentPlayerId = quizRoom.players[quizRoom.currentPlayerIndex];
-          if (!currentPlayerId || !currentPlayerId.equals(socket.userId)) {
-            logger.warn('Unauthorized answer submission', {
+          try {
+            const quizRoom = await QuizRoom.findOne({ roomId }).session(session);
+            if (!quizRoom || quizRoom.gameStatus !== 'in_progress') {
+              logger.warn('Invalid answer submission', { roomId, userId: socket.userId, gameStatus: quizRoom?.gameStatus });
+              socket.emit('error', { message: 'Game not in progress' });
+              if (callback) callback({ error: 'Game not in progress' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
+            }
+
+            const user = await User.findById(socket.userId).session(session);
+            if (!user) {
+              logger.warn('User not found', { userId: socket.userId });
+              socket.emit('error', { message: 'User not found' });
+              if (callback) callback({ error: 'User not found' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
+            }
+
+            const currentPlayerId = quizRoom.players[quizRoom.currentPlayerIndex];
+            if (!currentPlayerId || !currentPlayerId.equals(socket.userId)) {
+              logger.warn('Unauthorized answer submission', {
+                roomId,
+                userId: socket.userId,
+                currentPlayerId: currentPlayerId?.toString(),
+                currentPlayerIndex: quizRoom.currentPlayerIndex
+              });
+              socket.emit('error', { message: 'Not your turn' });
+              if (callback) callback({ error: 'Not your turn' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
+            }
+
+            const currentQuestion = JSON.parse(quizRoom.currentQuestion);
+            if (!currentQuestion || !currentQuestion.correctAnswer) {
+              logger.error('Invalid current question', { roomId, question: currentQuestion });
+              socket.emit('error', { message: 'Invalid question data' });
+              if (callback) callback({ error: 'Invalid question data' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
+            }
+
+            let isCorrect = false;
+            if (answer) {
+              logger.info('Verifying answer', { roomId, answer, correctAnswer: currentQuestion.correctAnswer });
+              isCorrect = await verifyAnswer(currentQuestion, answer);
+            } else {
+              logger.info('No answer provided, treating as incorrect', { roomId, userId: socket.userId });
+            }
+
+            const scoreIndex = quizRoom.scores.findIndex(s => s.playerId.equals(socket.userId));
+            if (scoreIndex === -1) {
+              logger.warn('Score entry not found for user', { roomId, userId: socket.userId });
+              socket.emit('error', { message: 'Score entry not found' });
+              if (callback) callback({ error: 'Score entry not found' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
+            }
+
+            quizRoom.currentQuestionAttempts += 1;
+            if (answer) {
+              const scoreDelta = isCorrect ? 10 : -5;
+              quizRoom.scores[scoreIndex].score += scoreDelta;
+            }
+
+            let needNewQuestion = false;
+            let gameEnded = false;
+
+            if (isCorrect) {
+              needNewQuestion = true;
+              quizRoom.currentQuestionAttempts = 0;
+              quizRoom.currentPlayerIndex = (quizRoom.currentPlayerIndex + 1) % quizRoom.players.length;
+
+              if (quizRoom.questionCount >= 10) {
+                gameEnded = true;
+                quizRoom.gameStatus = 'finished';
+                quizRoom.currentQuestion = null;
+                quizRoom.currentPlayerIndex = null;
+              } else {
+                io.to(roomId).emit('loading', { message: 'Generating next question...' });
+                try {
+                  const nextQuestion = await generateQuestion(
+                    quizRoom.topic,
+                    quizRoom.usedQuestions || [],
+                    quizRoom.questionCount + 1,
+                    quizRoom.difficultyOrder
+                  );
+
+                  if (!nextQuestion || !nextQuestion.question || !nextQuestion.options || !nextQuestion.correctAnswer) {
+                    throw new Error('Invalid question format');
+                  }
+
+                  if (!quizRoom.usedQuestions) {
+                    quizRoom.usedQuestions = [];
+                  }
+                  quizRoom.usedQuestions.push(nextQuestion.question);
+
+                  quizRoom.currentQuestion = JSON.stringify(nextQuestion);
+                  quizRoom.questionCount += 1;
+                  logger.info('Generated new question', {
+                    roomId,
+                    question: nextQuestion.question,
+                    questionCount: quizRoom.questionCount,
+                    difficulty: nextQuestion.difficulty
+                  });
+                } catch (error) {
+                  logger.error('Failed to generate new question', { roomId, topic: quizRoom.topic, error: error.message });
+                  socket.emit('error', { message: 'Failed to generate new question' });
+                  if (callback) callback({ error: 'Failed to generate new question' });
+                  await session.abortTransaction();
+                  session.endSession();
+                  io.to(roomId).emit('loadingComplete');
+                  return;
+                }
+              }
+            } else if (quizRoom.currentQuestionAttempts >= quizRoom.players.length) {
+              needNewQuestion = true;
+              quizRoom.currentQuestionAttempts = 0;
+              quizRoom.currentPlayerIndex = (quizRoom.currentPlayerIndex + 1) % quizRoom.players.length;
+
+              if (quizRoom.questionCount >= 10) {
+                gameEnded = true;
+                quizRoom.gameStatus = 'finished';
+                quizRoom.currentQuestion = null;
+                quizRoom.currentPlayerIndex = null;
+              } else {
+                io.to(roomId).emit('loading', { message: 'Generating next question...' });
+                try {
+                  const nextQuestion = await generateQuestion(
+                    quizRoom.topic,
+                    quizRoom.usedQuestions || [],
+                    quizRoom.questionCount + 1,
+                    quizRoom.difficultyOrder
+                  );
+
+                  if (!nextQuestion || !nextQuestion.question || !nextQuestion.options || !nextQuestion.correctAnswer) {
+                    throw new Error('Invalid question format');
+                  }
+
+                  if (!quizRoom.usedQuestions) {
+                    quizRoom.usedQuestions = [];
+                  }
+                  quizRoom.usedQuestions.push(nextQuestion.question);
+
+                  quizRoom.currentQuestion = JSON.stringify(nextQuestion);
+                  quizRoom.questionCount += 1;
+                  logger.info('Generated new question after all players attempted', {
+                    roomId,
+                    question: nextQuestion.question,
+                    questionCount: quizRoom.questionCount,
+                    difficulty: nextQuestion.difficulty
+                  });
+                } catch (error) {
+                  logger.error('Failed to generate new question', { roomId, topic: quizRoom.topic, error: error.message });
+                  socket.emit('error', { message: 'Failed to generate new question' });
+                  if (callback) callback({ error: 'Failed to generate new question' });
+                  await session.abortTransaction();
+                  session.endSession();
+                  io.to(roomId).emit('loadingComplete');
+                  return;
+                }
+              }
+            } else {
+              quizRoom.currentPlayerIndex = (quizRoom.currentPlayerIndex + 1) % quizRoom.players.length;
+            }
+
+            await quizRoom.save({ session });
+            await session.commitTransaction();
+            session.endSession();
+
+            logger.info('Answer processed successfully', {
               roomId,
               userId: socket.userId,
-              currentPlayerId: currentPlayerId?.toString(),
-              currentPlayerIndex: quizRoom.currentPlayerIndex
+              isCorrect,
+              score: quizRoom.scores[scoreIndex].score,
+              currentPlayerIndex: quizRoom.currentPlayerIndex,
+              questionCount: quizRoom.questionCount,
+              gameEnded
             });
-            socket.emit('error', { message: 'Not your turn' });
-            if (callback) callback({ error: 'Not your turn' });
-            await session.abortTransaction();
-            session.endSession();
-            io.to(roomId).emit('loadingComplete');
-            return;
-          }
 
-          const currentQuestion = JSON.parse(quizRoom.currentQuestion);
-          if (!currentQuestion || !currentQuestion.correctAnswer) {
-            logger.error('Invalid current question', { roomId, question: currentQuestion });
-            socket.emit('error', { message: 'Invalid question data' });
-            if (callback) callback({ error: 'Invalid question data' });
-            await session.abortTransaction();
-            session.endSession();
-            io.to(roomId).emit('loadingComplete');
-            return;
-          }
+            await ensurePlayersInRoom(roomId, quizRoom.players.map(p => p.toString()));
 
-          let isCorrect = false;
-          if (answer) {
-            logger.info('Verifying answer', { roomId, answer, correctAnswer: currentQuestion.correctAnswer });
-            isCorrect = await verifyAnswer(currentQuestion, answer);
-          } else {
-            logger.info('No answer provided, treating as incorrect', { roomId, userId: socket.userId });
-          }
+            const eventData = {
+              playerId: socket.userId,
+              name: user.name,
+              score: quizRoom.scores[scoreIndex].score,
+              correctAnswer: currentQuestion.correctAnswer,
+            };
 
-          const scoreIndex = quizRoom.scores.findIndex(s => s.playerId.equals(socket.userId));
-          if (scoreIndex === -1) {
-            logger.warn('Score entry not found for user', { roomId, userId: socket.userId });
-            socket.emit('error', { message: 'Score entry not found' });
-            if (callback) callback({ error: 'Score entry not found' });
-            await session.abortTransaction();
-            session.endSession();
-            io.to(roomId).emit('loadingComplete');
-            return;
-          }
-
-          quizRoom.currentQuestionAttempts += 1;
-          if (answer) {
-            const scoreDelta = isCorrect ? 10 : -5;
-            quizRoom.scores[scoreIndex].score += scoreDelta;
-          }
-
-          let needNewQuestion = false;
-          let gameEnded = false;
-
-          if (isCorrect) {
-            needNewQuestion = true;
-            quizRoom.currentQuestionAttempts = 0;
-            quizRoom.currentPlayerIndex = (quizRoom.currentPlayerIndex + 1) % quizRoom.players.length;
-
-            if (quizRoom.questionCount >= 10) {
-              gameEnded = true;
-              quizRoom.gameStatus = 'finished';
-              quizRoom.currentQuestion = null;
-              quizRoom.currentPlayerIndex = null;
-            } else {
-              io.to(roomId).emit('loading', { message: 'Generating next question...' });
-              try {
-                const nextQuestion = await generateQuestion(
-                  quizRoom.topic,
-                  quizRoom.usedQuestions || [],
-                  quizRoom.questionCount + 1,
-                  quizRoom.difficultyOrder
-                );
-
-                if (!nextQuestion || !nextQuestion.question || !nextQuestion.options || !nextQuestion.correctAnswer) {
-                  throw new Error('Invalid question format');
-                }
-
-                if (!quizRoom.usedQuestions) {
-                  quizRoom.usedQuestions = [];
-                }
-                quizRoom.usedQuestions.push(nextQuestion.question);
-
-                quizRoom.currentQuestion = JSON.stringify(nextQuestion);
-                quizRoom.questionCount += 1;
-                logger.info('Generated new question', {
-                  roomId,
-                  question: nextQuestion.question,
-                  questionCount: quizRoom.questionCount,
-                  difficulty: nextQuestion.difficulty
-                });
-              } catch (error) {
-                logger.error('Failed to generate new question', { roomId, topic: quizRoom.topic, error: error.message });
-                socket.emit('error', { message: 'Failed to generate new question' });
-                if (callback) callback({ error: 'Failed to generate new question' });
-                await session.abortTransaction();
-                session.endSession();
-                io.to(roomId).emit('loadingComplete');
-                return;
+            if (answer) {
+              if (isCorrect) {
+                logger.info('Emitting correctAnswer', { roomId, ...eventData });
+                io.to(roomId).emit('correctAnswer', eventData);
+              } else {
+                logger.info('Emitting wrongAnswer', { roomId, ...eventData });
+                io.to(roomId).emit('wrongAnswer', eventData);
               }
-            }
-          } else if (quizRoom.currentQuestionAttempts >= quizRoom.players.length) {
-            needNewQuestion = true;
-            quizRoom.currentQuestionAttempts = 0;
-            quizRoom.currentPlayerIndex = (quizRoom.currentPlayerIndex + 1) % quizRoom.players.length;
-
-            if (quizRoom.questionCount >= 10) {
-              gameEnded = true;
-              quizRoom.gameStatus = 'finished';
-              quizRoom.currentQuestion = null;
-              quizRoom.currentPlayerIndex = null;
             } else {
-              io.to(roomId).emit('loading', { message: 'Generating next question...' });
-              try {
-                const nextQuestion = await generateQuestion(
-                  quizRoom.topic,
-                  quizRoom.usedQuestions || [],
-                  quizRoom.questionCount + 1,
-                  quizRoom.difficultyOrder
-                );
-
-                if (!nextQuestion || !nextQuestion.question || !nextQuestion.options || !nextQuestion.correctAnswer) {
-                  throw new Error('Invalid question format');
-                }
-
-                if (!quizRoom.usedQuestions) {
-                  quizRoom.usedQuestions = [];
-                }
-                quizRoom.usedQuestions.push(nextQuestion.question);
-
-                quizRoom.currentQuestion = JSON.stringify(nextQuestion);
-                quizRoom.questionCount += 1;
-                logger.info('Generated new question after all players attempted', {
-                  roomId,
-                  question: nextQuestion.question,
-                  questionCount: quizRoom.questionCount,
-                  difficulty: nextQuestion.difficulty
-                });
-              } catch (error) {
-                logger.error('Failed to generate new question', { roomId, topic: quizRoom.topic, error: error.message });
-                socket.emit('error', { message: 'Failed to generate new question' });
-                if (callback) callback({ error: 'Failed to generate new question' });
-                await session.abortTransaction();
-                session.endSession();
-                io.to(roomId).emit('loadingComplete');
-                return;
-              }
+              logger.info('Emitting noAnswer', { roomId, ...eventData });
+              io.to(roomId).emit('noAnswer', eventData);
             }
-          } else {
-            quizRoom.currentPlayerIndex = (quizRoom.currentPlayerIndex + 1) % quizRoom.players.length;
-          }
 
-          await quizRoom.save({ session });
-          await session.commitTransaction();
-          session.endSession();
+            io.to(roomId).emit('scoreUpdate', {
+              scores: quizRoom.scores.map(score => ({
+                playerId: score.playerId.toString(),
+                score: score.score,
+              }))
+            });
 
-          logger.info('Answer processed successfully', {
-            roomId,
-            userId: socket.userId,
-            isCorrect,
-            score: quizRoom.scores[scoreIndex].score,
-            currentPlayerIndex: quizRoom.currentPlayerIndex,
-            questionCount: quizRoom.questionCount,
-            gameEnded
-          });
-
-          await ensurePlayersInRoom(roomId, quizRoom.players.map(p => p.toString()));
-
-          const eventData = {
-            playerId: socket.userId,
-            name: user.name,
-            score: quizRoom.scores[scoreIndex].score,
-            correctAnswer: currentQuestion.correctAnswer,
-          };
-
-          if (answer) {
-            if (isCorrect) {
-              logger.info('Emitting correctAnswer', { roomId, ...eventData });
-              io.to(roomId).emit('correctAnswer', eventData);
-            } else {
-              logger.info('Emitting wrongAnswer', { roomId, ...eventData });
-              io.to(roomId).emit('wrongAnswer', eventData);
+            if (gameEnded) {
+              logger.info('Emitting gameEnded', { roomId, questionCount: quizRoom.questionCount });
+              io.to(roomId).emit('gameEnded', { roomId, gameStatus: 'finished' });
             }
-          } else {
-            logger.info('Emitting noAnswer', { roomId, ...eventData });
-            io.to(roomId).emit('noAnswer', eventData);
+
+            await broadcastGameState(roomId);
+            io.to(roomId).emit('loadingComplete');
+
+            if (callback) callback({
+              success: true,
+              isCorrect: answer ? isCorrect : false,
+              score: quizRoom.scores[scoreIndex].score
+            });
+
+            return;
+
+          } catch (error) {
+            logger.error('Error in submitAnswer transaction', { roomId, userId: socket.userId, attempt: attempt + 1, error: error.message });
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
           }
-
-          io.to(roomId).emit('scoreUpdate', {
-            scores: quizRoom.scores.map(score => ({
-              playerId: score.playerId.toString(),
-              score: score.score,
-            }))
-          });
-
-          if (gameEnded) {
-            logger.info('Emitting gameEnded', { roomId, questionCount: quizRoom.questionCount });
-            io.to(roomId).emit('gameEnded', { roomId, gameStatus: 'finished' });
-          }
-
-          await broadcastGameState(roomId);
-          io.to(roomId).emit('loadingComplete');
-
-          if (callback) callback({
-            success: true,
-            isCorrect: answer ? isCorrect : false,
-            score: quizRoom.scores[scoreIndex].score
-          });
-
         } catch (error) {
-          logger.error('Error in submitAnswer transaction', { roomId, userId: socket.userId, error: error.message });
-          await session.abortTransaction();
-          session.endSession();
-          throw error;
+          attempt++;
+          if ((error.message.includes('No matching document found') || error.message.includes('Write conflict')) && attempt < maxRetries) {
+            logger.warn(`Conflict detected, retrying submitAnswer (attempt ${attempt})`, { roomId, userId: socket.userId });
+            await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+            continue;
+          }
+
+          logger.error('Error processing answer', { roomId, userId: socket.userId, answer, attempt: attempt, error: error.message });
+          socket.emit('error', { message: 'Failed to process answer: ' + error.message });
+          io.to(roomId).emit('loadingComplete');
+          if (callback) callback({ error: 'Failed to process answer: ' + error.message });
+          return;
         }
-      } catch (error) {
-        logger.error('Error processing answer', { roomId, userId: socket.userId, answer, error: error.message });
-        socket.emit('error', { message: 'Failed to process answer: ' + error.message });
-        io.to(roomId).emit('loadingComplete');
-        if (callback) callback({ error: 'Failed to process answer: ' + error.message });
       }
     });
 
     socket.on('leaveGame', async ({ roomId }, callback) => {
-      try {
-        logger.info('Received leaveGame event', { roomId, userId: socket.userId });
-        io.to(roomId).emit('loading', { message: 'Processing player leave...' });
+      const maxRetries = 3;
+      let attempt = 0;
 
-        if (!socket.userId) {
-          logger.error('No userId on socket', { roomId });
-          socket.emit('error', { message: 'User not authenticated' });
-          if (callback) callback({ error: 'User not authenticated' });
-          io.to(roomId).emit('loadingComplete');
-          return;
-        }
-
-        const session = await mongoose.startSession();
-        session.startTransaction();
-
+      while (attempt < maxRetries) {
         try {
-          const quizRoom = await QuizRoom.findOne({ roomId }).session(session);
-          if (!quizRoom) {
-            logger.warn('Game room not found', { roomId });
-            socket.emit('error', { message: 'Game room not found' });
-            if (callback) callback({ error: 'Game room not found' });
-            await session.abortTransaction();
-            session.endSession();
+          logger.info('Received leaveGame event', { roomId, userId: socket.userId });
+          io.to(roomId).emit('loading', { message: 'Processing player leave...' });
+
+          if (!socket.userId) {
+            logger.error('No userId on socket', { roomId });
+            socket.emit('error', { message: 'User not authenticated' });
+            if (callback) callback({ error: 'User not authenticated' });
             io.to(roomId).emit('loadingComplete');
             return;
           }
 
-          const user = await User.findById(socket.userId).session(session);
-          if (!user) {
-            logger.warn('User not found', { userId: socket.userId });
-            socket.emit('error', { message: 'User not found' });
-            if (callback) callback({ error: 'User not found' });
-            await session.abortTransaction();
-            session.endSession();
-            io.to(roomId).emit('loadingComplete');
-            return;
-          }
+          const session = await mongoose.startSession();
+          session.startTransaction();
 
-          const wasCurrentPlayer = quizRoom.currentPlayerIndex !== null &&
-                                 quizRoom.players[quizRoom.currentPlayerIndex]?.equals(socket.userId);
-
-          quizRoom.players = quizRoom.players.filter(p => !p.equals(socket.userId));
-          quizRoom.scores = quizRoom.scores.filter(s => !s.playerId.equals(socket.userId));
-
-          userSockets.delete(socket.userId);
-
-          if (quizRoom.players.length === 0) {
-            await QuizRoom.deleteOne({ roomId }).session(session);
-            logger.info('Room deleted due to no players', { roomId });
-          } else {
-            if (quizRoom.creatorId.equals(socket.userId)) {
-              quizRoom.gameStatus = 'finished';
-              quizRoom.currentQuestion = null;
-              quizRoom.currentPlayerIndex = null;
-            } else if (quizRoom.gameStatus === 'in_progress' && wasCurrentPlayer) {
-              if (quizRoom.currentPlayerIndex >= quizRoom.players.length) {
-                quizRoom.currentPlayerIndex = 0;
-              }
+          try {
+            const quizRoom = await QuizRoom.findOne({ roomId }).session(session);
+            if (!quizRoom) {
+              logger.warn('Game room not found', { roomId });
+              socket.emit('error', { message: 'Game room not found' });
+              if (callback) callback({ error: 'Game room not found' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
             }
 
-            await quizRoom.save({ session });
+            const user = await User.findById(socket.userId).session(session);
+            if (!user) {
+              logger.warn('User not found', { userId: socket.userId });
+              socket.emit('error', { message: 'User not found' });
+              if (callback) callback({ error: 'User not found' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
+            }
+
+            const wasCurrentPlayer = quizRoom.currentPlayerIndex !== null &&
+                                   quizRoom.players[quizRoom.currentPlayerIndex]?.equals(socket.userId);
+
+            quizRoom.players = quizRoom.players.filter(p => !p.equals(socket.userId));
+            quizRoom.scores = quizRoom.scores.filter(s => !s.playerId.equals(socket.userId));
+
+            userSockets.delete(socket.userId);
+
+            if (quizRoom.players.length === 0) {
+              await QuizRoom.deleteOne({ roomId }).session(session);
+              logger.info('Room deleted due to no players', { roomId });
+            } else {
+              if (quizRoom.creatorId.equals(socket.userId)) {
+                quizRoom.gameStatus = 'finished';
+                quizRoom.currentQuestion = null;
+                quizRoom.currentPlayerIndex = null;
+              } else if (quizRoom.gameStatus === 'in_progress' && wasCurrentPlayer) {
+                if (quizRoom.currentPlayerIndex >= quizRoom.players.length) {
+                  quizRoom.currentPlayerIndex = 0;
+                }
+              }
+
+              await quizRoom.save({ session });
+            }
+
+            await session.commitTransaction();
+            session.endSession();
+
+            socket.leave(roomId);
+            io.to(roomId).emit('playerLeft', { userId: socket.userId, name: user.name });
+
+            if (quizRoom.players.length > 0) {
+              await broadcastGameState(roomId);
+            }
+            io.to(roomId).emit('loadingComplete');
+
+            if (callback) callback({ success: true });
+
+            return;
+
+          } catch (error) {
+            logger.error('Error in leaveGame transaction', { roomId, userId: socket.userId, attempt: attempt + 1, error: error.message });
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
           }
-
-          await session.commitTransaction();
-          session.endSession();
-
-          socket.leave(roomId);
-          io.to(roomId).emit('playerLeft', { userId: socket.userId, name: user.name });
-
-          if (quizRoom.players.length > 0) {
-            await broadcastGameState(roomId);
-          }
-          io.to(roomId).emit('loadingComplete');
-
-          if (callback) callback({ success: true });
-
         } catch (error) {
-          logger.error('Error in leaveGame transaction', { roomId, userId: socket.userId, error: error.message });
-          await session.abortTransaction();
-          session.endSession();
-          throw error;
+          attempt++;
+          if ((error.message.includes('No matching document found') || error.message.includes('Write conflict')) && attempt < maxRetries) {
+            logger.warn(`Conflict detected, retrying leaveGame (attempt ${attempt})`, { roomId, userId: socket.userId });
+            await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+            continue;
+          }
+
+          logger.error('Error leaving game', { roomId, userId: socket.userId, attempt: attempt, error: error.message });
+          socket.emit('error', { message: 'Failed to leave game: ' + error.message });
+          io.to(roomId).emit('loadingComplete');
+          if (callback) callback({ error: 'Failed to leave game: ' + error.message });
+          return;
         }
-      } catch (error) {
-        logger.error('Error leaving game', { roomId, userId: socket.userId, error: error.message });
-        socket.emit('error', { message: 'Failed to leave game: ' + error.message });
-        io.to(roomId).emit('loadingComplete');
-        if (callback) callback({ error: 'Failed to leave game: ' + error.message });
       }
     });
 
     socket.on('endGame', async ({ roomId }, callback) => {
-      try {
-        logger.info('Received endGame event', { roomId, userId: socket.userId });
-        io.to(roomId).emit('loading', { message: 'Ending game...' });
+      const maxRetries = 3;
+      let attempt = 0;
 
-        if (!socket.userId) {
-          logger.error('No userId on socket', { roomId });
-          socket.emit('error', { message: 'User not authenticated' });
-          if (callback) callback({ error: 'User not authenticated' });
+      while (attempt < maxRetries) {
+        try {
+          logger.info('Received endGame event', { roomId, userId: socket.userId });
+          io.to(roomId).emit('loading', { message: 'Ending game...' });
+
+          if (!socket.userId) {
+            logger.error('No userId on socket', { roomId });
+            socket.emit('error', { message: 'User not authenticated' });
+            if (callback) callback({ error: 'User not authenticated' });
+            io.to(roomId).emit('loadingComplete');
+            return;
+          }
+
+          const session = await mongoose.startSession();
+          session.startTransaction();
+
+          try {
+            const quizRoom = await QuizRoom.findOne({ roomId }).session(session);
+            if (!quizRoom) {
+              logger.warn('Game room not found', { roomId });
+              socket.emit('error', { message: 'Game room not found' });
+              if (callback) callback({ error: 'Game room not found' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
+            }
+
+            if (!quizRoom.creatorId.equals(socket.userId)) {
+              logger.warn('Unauthorized game end attempt', { roomId, userId: socket.userId, creatorId: quizRoom.creatorId.toString() });
+              socket.emit('error', { message: 'Only the creator can end the game' });
+              if (callback) callback({ error: 'Only the creator can end the game' });
+              await session.abortTransaction();
+              session.endSession();
+              io.to(roomId).emit('loadingComplete');
+              return;
+            }
+
+            quizRoom.gameStatus = 'finished';
+            quizRoom.currentQuestion = null;
+            quizRoom.currentPlayerIndex = null;
+            await quizRoom.save({ session });
+
+            await session.commitTransaction();
+            session.endSession();
+
+            logger.info('Game ended by creator', { roomId, userId: socket.userId });
+            await ensurePlayersInRoom(roomId, quizRoom.players.map(p => p.toString()));
+            io.to(roomId).emit('gameEnded', { roomId, gameStatus: 'finished' });
+            await broadcastGameState(roomId);
+            io.to(roomId).emit('loadingComplete');
+
+            if (callback) callback({ success: true });
+
+            return;
+
+          } catch (error) {
+            logger.error('Error in endGame transaction', { roomId, userId: socket.userId, attempt: attempt + 1, error: error.message });
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
+          }
+        } catch (error) {
+          attempt++;
+          if ((error.message.includes('No matching document found') || error.message.includes('Write conflict')) && attempt < maxRetries) {
+            logger.warn(`Conflict detected, retrying endGame (attempt ${attempt})`, { roomId, userId: socket.userId });
+            await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+            continue;
+          }
+
+          logger.error('Error ending game', { roomId, userId: socket.userId, attempt: attempt, error: error.message });
+          socket.emit('error', { message: 'Failed to end game: ' + error.message });
           io.to(roomId).emit('loadingComplete');
+          if (callback) callback({ error: 'Failed to end game: ' + error.message });
           return;
         }
-
-        const session = await mongoose.startSession();
-        session.startTransaction();
-
-        try {
-          const quizRoom = await QuizRoom.findOne({ roomId }).session(session);
-          if (!quizRoom) {
-            logger.warn('Game room not found', { roomId });
-            socket.emit('error', { message: 'Game room not found' });
-            if (callback) callback({ error: 'Game room not found' });
-            await session.abortTransaction();
-            session.endSession();
-            io.to(roomId).emit('loadingComplete');
-            return;
-          }
-
-          if (!quizRoom.creatorId.equals(socket.userId)) {
-            logger.warn('Unauthorized game end attempt', { roomId, userId: socket.userId, creatorId: quizRoom.creatorId.toString() });
-            socket.emit('error', { message: 'Only the creator can end the game' });
-            if (callback) callback({ error: 'Only the creator can end the game' });
-            await session.abortTransaction();
-            session.endSession();
-            io.to(roomId).emit('loadingComplete');
-            return;
-          }
-
-          quizRoom.gameStatus = 'finished';
-          quizRoom.currentQuestion = null;
-          quizRoom.currentPlayerIndex = null;
-          await quizRoom.save({ session });
-
-          await session.commitTransaction();
-          session.endSession();
-
-          logger.info('Game ended by creator', { roomId, userId: socket.userId });
-          await ensurePlayersInRoom(roomId, quizRoom.players.map(p => p.toString()));
-          io.to(roomId).emit('gameEnded', { roomId, gameStatus: 'finished' });
-          await broadcastGameState(roomId);
-          io.to(roomId).emit('loadingComplete');
-
-          if (callback) callback({ success: true });
-
-        } catch (error) {
-          logger.error('Error in endGame transaction', { roomId, userId: socket.userId, error: error.message });
-          await session.abortTransaction();
-          session.endSession();
-          throw error;
-        }
-      } catch (error) {
-        logger.error('Error ending game', { roomId, userId: socket.userId, error: error.message });
-        socket.emit('error', { message: 'Failed to end game: ' + error.message });
-        io.to(roomId).emit('loadingComplete');
-        if (callback) callback({ error: 'Failed to end game: ' + error.message });
       }
     });
 
