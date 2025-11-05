@@ -100,6 +100,9 @@ app.use((req, res, next) => {
 app.get('/ding', (req, res) => {
   res.send('Dong');
 });
+app.get('/', (req, res) => {
+  res.send('✅ WitWizHub Backend is running successfully!');
+});
 app.use('/auth', AuthRouter);
 app.use('/api/messages', MessageRouter);
 app.use('/api/questions', QuestionRouter);
