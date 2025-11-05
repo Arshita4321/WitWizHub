@@ -664,3 +664,8 @@
 {"endpoint":"/api/quiz/generate","error":"jwt expired","level":"error","message":"Invalid token","method":"POST","timestamp":"2025-09-19T19:45:52.716Z"}
 {"endpoint":"/api/profile","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-09-22T05:12:09.885Z"}
 {"endpoint":"/api/profile","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-09-22T05:12:09.910Z"}
+{"endpoint":"/api/game/user-object-id","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-11-05T18:02:05.708Z"}
+{"error":"jwt expired","level":"error","message":"Socket authentication failed","socketId":"xjtJXHCcNfsJyts8AAAC","timestamp":"2025-11-05T18:02:05.788Z"}
+{"endpoint":"/api/game/user-object-id","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-11-05T18:02:05.737Z"}
+{"endpoint":"/api/profile","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-11-05T18:02:13.006Z"}
+{"endpoint":"/api/profile","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-11-05T18:02:13.036Z"}

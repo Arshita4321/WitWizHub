@@ -76,7 +76,7 @@ const generalLimiter = rateLimit({
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://hoppscotch.io',  'https://witwizhub-1.onrender.com' , 'https://witwiz-hub.vercel.app/login'],
+  origin: ['http://localhost:5173', 'https://hoppscotch.io',  'https://witwizhub-1.onrender.com' , 'https://witwiz-hub.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Authorization', 'Content-Type'],
   credentials: true
