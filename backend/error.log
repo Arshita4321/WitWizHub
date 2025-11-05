@@ -657,3 +657,10 @@
 {"endpoint":"/api/game/user-object-id","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-09-02T16:39:15.665Z"}
 {"endpoint":"/api/game/user-object-id","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-09-02T16:39:15.677Z"}
 {"attempt":1,"error":"Caused by :: Write conflict during plan execution and yielding is disabled. :: Please retry your operation or multi-document transaction.","level":"error","message":"Error in submitAnswer transaction","roomId":"09999","timestamp":"2025-09-02T16:42:51.737Z","userId":"688672c94150541ed0a29ac8"}
+{"endpoint":"/api/profile","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-09-18T06:53:02.698Z"}
+{"endpoint":"/api/profile","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-09-18T06:53:02.709Z"}
+{"endpoint":"/api/quiz/generate","error":"jwt expired","level":"error","message":"Invalid token","method":"POST","timestamp":"2025-09-19T19:45:46.092Z"}
+{"endpoint":"/api/quiz/generate","error":"jwt expired","level":"error","message":"Invalid token","method":"POST","timestamp":"2025-09-19T19:45:50.627Z"}
+{"endpoint":"/api/quiz/generate","error":"jwt expired","level":"error","message":"Invalid token","method":"POST","timestamp":"2025-09-19T19:45:52.716Z"}
+{"endpoint":"/api/profile","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-09-22T05:12:09.885Z"}
+{"endpoint":"/api/profile","error":"jwt expired","level":"error","message":"Invalid token","method":"GET","timestamp":"2025-09-22T05:12:09.910Z"}

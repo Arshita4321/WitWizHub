@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { TextField, Button } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TextField, Button, Avatar, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { handleError, handleSuccess } from '../utils';
+import { Send, Edit3, Trash2, Reply, MessageSquare, Clock, User, Sparkles } from 'lucide-react';
 import '../styles/ChatSection.css';
 
 const ChatSection = () => {
@@ -11,10 +12,17 @@ const ChatSection = () => {
   const [newReply, setNewReply] = useState({});
   const [editMessage, setEditMessage] = useState({ id: null, text: '' });
   const [editReply, setEditReply] = useState({ messageId: null, replyId: null, text: '' });
+  const [expandedReplies, setExpandedReplies] = useState({});
+  const messagesEndRef = useRef(null);
+  
   const token = localStorage.getItem('jwtToken');
   const name = localStorage.getItem('name');
   const userId = localStorage.getItem('userId');
   const navigate = useNavigate();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
     console.log('localStorage values:', {
@@ -54,6 +62,10 @@ const ChatSection = () => {
     };
     fetchMessages();
   }, [token, userId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handlePostMessage = async (e) => {
     e.preventDefault();
@@ -259,184 +271,568 @@ const ChatSection = () => {
     }
   };
 
+  const toggleReplies = (messageId) => {
+    setExpandedReplies(prev => ({
+      ...prev,
+      [messageId]: !prev[messageId]
+    }));
+  };
+
+  const getAvatarColor = (name) => {
+    const colors = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    ];
+    return colors[name?.charCodeAt(0) % colors.length];
+  };
+
   return (
     <motion.div
-      className="chat-container"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.5, delay: 0.3 }}
+      className="max-w-6xl mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
     >
-      <h2 className="chat-heading">Chat Section</h2>
-      <form onSubmit={handlePostMessage} className="message-form">
-        <TextField
-          fullWidth
-          label="New Message"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          variant="outlined"
-          InputLabelProps={{ style: { color: '#E5E7EB' } }}
-          InputProps={{
-            style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
-          }}
-        />
-        <Button
-          type="submit"
-          variant="contained"
-          className="post-button"
-          disabled={!token || !userId || !name}
-        >
-          Post Message
-        </Button>
-      </form>
-      <div>
-        {messages.map((msg) => (
-          <div key={msg._id} className="mb-4 pb-4 border-b border-gray-600">
-            {editMessage.id === msg._id ? (
-              <form onSubmit={(e) => handleEditMessage(msg._id, e)} className="mb-2">
-                <TextField
-                  fullWidth
-                  value={editMessage.text}
-                  onChange={(e) => setEditMessage({ ...editMessage, text: e.target.value })}
-                  variant="outlined"
-                  InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                  InputProps={{
-                    style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
-                  }}
-                />
-                <Button
-                  type="submit"
-                  sx={{ color: '#2DD4BF', marginTop: '10px', marginRight: '10px' }}
-                >
-                  Save
-                </Button>
-                <Button
-                  onClick={() => setEditMessage({ id: null, text: '' })}
-                  sx={{ color: '#EC4899', marginTop: '10px' }}
-                >
-                  Cancel
-                </Button>
-              </form>
-            )
+      {/* Header */}
+      <motion.div 
+        className="text-center mb-8"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="flex items-center justify-center mb-4">
+          <motion.div
+            className="p-3 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-2xl mr-4"
+            whileHover={{ rotate: 5, scale: 1.1 }}
+          >
+            <MessageSquare className="w-8 h-8 text-white" />
+          </motion.div>
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+            Live Chat
+          </h2>
+        </div>
+        <p className="text-gray-400 text-lg">Join the conversation and connect with fellow innovators</p>
+      </motion.div>
 
-: (
-              <div className="message-container">
-                <p className="message-text">
-                  <strong>{msg.name}</strong>: {msg.text}{' '}
-                  <em className="message-timestamp">
-                    ({new Date(msg.timestamp).toLocaleString()})
-                  </em>
-                </p>
-                {msg.userId === userId && (
-                  <div className="flex space-x-2">
-                    <Button
-                      sx={{ color: '#2DD4BF', fontSize: '0.8rem' }}
-                      onClick={() => {
-                        console.log('Edit message clicked:', { messageId: msg._id, userId, msgUserId: msg.userId });
-                        setEditMessage({ id: msg._id, text: msg.text });
+      {/* Message Input Form */}
+      <motion.div
+        className="mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <form onSubmit={handlePostMessage} className="relative">
+          <div className="flex items-end space-x-4 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
+            <Avatar
+              sx={{
+                width: 48,
+                height: 48,
+                background: getAvatarColor(name),
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                border: '3px solid rgba(255, 255, 255, 0.2)',
+              }}
+            >
+              {name?.charAt(0).toUpperCase() || 'U'}
+            </Avatar>
+            <div className="flex-1 relative">
+              <TextField
+                fullWidth
+                multiline
+                maxRows={4}
+                placeholder="Share your thoughts with the community..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    borderRadius: '20px',
+                    color: '#E5E7EB',
+                    fontSize: '1.1rem',
+                    '& fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.2)',
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(45, 212, 191, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#2DD4BF',
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputBase-input::placeholder': {
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    opacity: 1,
+                  },
+                }}
+              />
+            </div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={!token || !userId || !name || !newMessage.trim()}
+                sx={{
+                  background: 'linear-gradient(135deg, #2DD4BF 0%, #38BDF8 100%)',
+                  borderRadius: '16px',
+                  padding: '12px 24px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  minWidth: '120px',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #0D9488 0%, #0284C7 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 10px 30px rgba(45, 212, 191, 0.4)',
+                  },
+                  '&:disabled': {
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    color: 'rgba(255, 255, 255, 0.4)',
+                  },
+                }}
+                startIcon={<Send className="w-5 h-5" />}
+              >
+                Send
+              </Button>
+            </motion.div>
+          </div>
+        </form>
+      </motion.div>
+
+      {/* Messages Container */}
+      <motion.div
+        className="space-y-6 mb-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <AnimatePresence>
+          {messages.map((msg, index) => (
+            <motion.div
+              key={msg._id}
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="group relative"
+            >
+              {editMessage.id === msg._id ? (
+                <motion.div
+                  className="p-6 bg-gradient-to-br from-purple-900/30 to-blue-900/30 backdrop-blur-xl rounded-3xl border border-purple-500/30 shadow-2xl"
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                >
+                  <form onSubmit={(e) => handleEditMessage(msg._id, e)} className="space-y-4">
+                    <TextField
+                      fullWidth
+                      multiline
+                      value={editMessage.text}
+                      onChange={(e) => setEditMessage({ ...editMessage, text: e.target.value })}
+                      variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          borderRadius: '16px',
+                          color: '#E5E7EB',
+                          '& fieldset': {
+                            borderColor: 'rgba(147, 51, 234, 0.5)',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: 'rgba(147, 51, 234, 0.8)',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#9333EA',
+                          },
+                        },
                       }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      sx={{ color: '#EC4899', fontSize: '0.8rem' }}
-                      onClick={() => {
-                        console.log('Delete message clicked:', { messageId: msg._id, userId, msgUserId: msg.userId });
-                        handleDeleteMessage(msg._id);
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="ml-6 mt-2">
-              {msg.replies.map((reply) => (
-                <div key={reply._id} className="mb-2">
-                  {editReply.messageId === msg._id && editReply.replyId === reply._id ? (
-                    <form onSubmit={(e) => handleEditReply(msg._id, reply._id, e)}>
-                      <TextField
-                        fullWidth
-                        value={editReply.text}
-                        onChange={(e) => setEditReply({ ...editReply, text: e.target.value })}
-                        variant="outlined"
-                        InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                        InputProps={{
-                          style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
-                        }}
-                      />
+                    />
+                    <div className="flex space-x-3">
                       <Button
                         type="submit"
-                        sx={{ color: '#2DD4BF', marginTop: '10px', marginRight: '10px' }}
+                        sx={{
+                          background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                          color: 'white',
+                          borderRadius: '12px',
+                          padding: '8px 20px',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                          },
+                        }}
                       >
-                        Save
+                        Save Changes
                       </Button>
                       <Button
-                        onClick={() => setEditReply({ messageId: null, replyId: null, text: '' })}
-                        sx={{ color: '#EC4899', marginTop: '10px' }}
+                        onClick={() => setEditMessage({ id: null, text: '' })}
+                        sx={{
+                          background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                          color: 'white',
+                          borderRadius: '12px',
+                          padding: '8px 20px',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                          },
+                        }}
                       >
                         Cancel
                       </Button>
-                    </form>
-                  ) : (
-                    <div className="reply-container">
-                      <p className="reply-text">
-                        <strong>{reply.name}</strong>: {reply.text}{' '}
-                        <em className="message-timestamp">
-                          ({new Date(reply.timestamp).toLocaleString()})
-                        </em>
+                    </div>
+                  </form>
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="p-6 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl rounded-3xl border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:border-white/20"
+                  whileHover={{ y: -2 }}
+                >
+                  <div className="flex items-start space-x-4">
+                    <Avatar
+                      sx={{
+                        width: 50,
+                        height: 50,
+                        background: getAvatarColor(msg.name),
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        border: '3px solid rgba(255, 255, 255, 0.2)',
+                      }}
+                    >
+                      {msg.name?.charAt(0).toUpperCase() || 'U'}
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <span className="font-bold text-white text-lg">{msg.name}</span>
+                        <Chip
+                          icon={<Clock className="w-3 h-3" />}
+                          label={new Date(msg.timestamp).toLocaleString()}
+                          size="small"
+                          sx={{
+                            background: 'rgba(45, 212, 191, 0.2)',
+                            color: '#2DD4BF',
+                            fontSize: '0.75rem',
+                            '& .MuiChip-icon': {
+                              color: '#2DD4BF',
+                            },
+                          }}
+                        />
+                      </div>
+                      <p className="text-gray-200 text-lg leading-relaxed break-words">
+                        {msg.text}
                       </p>
-                      {reply.userId === userId && (
-                        <div className="flex space-x-2">
-                          <Button
-                            sx={{ color: '#2DD4BF', fontSize: '0.8rem' }}
+                      
+                      {/* Action buttons */}
+                      {msg.userId === userId && (
+                        <motion.div
+                          className="flex space-x-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 0, x: 0 }}
+                          whileHover={{ opacity: 1 }}
+                        >
+                          <motion.button
                             onClick={() => {
-                              console.log('Edit reply clicked:', { messageId: msg._id, replyId: reply._id, userId, replyUserId: reply.userId });
-                              setEditReply({ messageId: msg._id, replyId: reply._id, text: reply.text });
+                              console.log('Edit message clicked:', { messageId: msg._id, userId, msgUserId: msg.userId });
+                              setEditMessage({ id: msg._id, text: msg.text });
                             }}
+                            className="flex items-center space-x-1 px-3 py-1 bg-teal-500/20 hover:bg-teal-500/30 rounded-lg transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                           >
-                            Edit
-                          </Button>
-                          <Button
-                            sx={{ color: '#EC4899', fontSize: '0.8rem' }}
+                            <Edit3 className="w-3 h-3 text-teal-400" />
+                            <span className="text-teal-400 text-sm">Edit</span>
+                          </motion.button>
+                          <motion.button
                             onClick={() => {
-                              console.log('Delete reply clicked:', { messageId: msg._id, replyId: reply._id, userId, replyUserId: reply.userId });
-                              handleDeleteReply(msg._id, reply._id);
+                              console.log('Delete message clicked:', { messageId: msg._id, userId, msgUserId: msg.userId });
+                              handleDeleteMessage(msg._id);
                             }}
+                            className="flex items-center space-x-1 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                           >
-                            Delete
-                          </Button>
-                        </div>
+                            <Trash2 className="w-3 h-3 text-red-400" />
+                            <span className="text-red-400 text-sm">Delete</span>
+                          </motion.button>
+                        </motion.div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Reply Section */}
+                  {msg.replies && msg.replies.length > 0 && (
+                    <motion.div className="mt-6 pl-6 border-l-2 border-gradient-to-b from-teal-400/50 to-purple-400/50">
+                      <motion.button
+                        onClick={() => toggleReplies(msg._id)}
+                        className="flex items-center space-x-2 text-teal-400 hover:text-teal-300 mb-4 transition-colors"
+                        whileHover={{ x: 5 }}
+                      >
+                        <Reply className="w-4 h-4" />
+                        <span className="font-medium">
+                          {expandedReplies[msg._id] ? 'Hide' : 'Show'} {msg.replies.length} replies
+                        </span>
+                        <motion.div
+                          animate={{ rotate: expandedReplies[msg._id] ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </motion.div>
+                      </motion.button>
+
+                      <AnimatePresence>
+                        {expandedReplies[msg._id] && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-4"
+                          >
+                            {msg.replies.map((reply, replyIndex) => (
+                              <motion.div
+                                key={reply._id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: replyIndex * 0.1 }}
+                                className="group/reply relative"
+                              >
+                                {editReply.messageId === msg._id && editReply.replyId === reply._id ? (
+                                  <motion.div
+                                    className="p-4 bg-gradient-to-br from-purple-800/20 to-blue-800/20 rounded-2xl border border-purple-400/20"
+                                    initial={{ scale: 0.95 }}
+                                    animate={{ scale: 1 }}
+                                  >
+                                    <form onSubmit={(e) => handleEditReply(msg._id, reply._id, e)} className="space-y-3">
+                                      <TextField
+                                        fullWidth
+                                        multiline
+                                        value={editReply.text}
+                                        onChange={(e) => setEditReply({ ...editReply, text: e.target.value })}
+                                        variant="outlined"
+                                        sx={{
+                                          '& .MuiOutlinedInput-root': {
+                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                            borderRadius: '12px',
+                                            color: '#E5E7EB',
+                                            '& fieldset': {
+                                              borderColor: 'rgba(147, 51, 234, 0.3)',
+                                            },
+                                          },
+                                        }}
+                                      />
+                                      <div className="flex space-x-2">
+                                        <Button
+                                          type="submit"
+                                          size="small"
+                                          sx={{
+                                            background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                                            color: 'white',
+                                            borderRadius: '8px',
+                                          }}
+                                        >
+                                          Save
+                                        </Button>
+                                        <Button
+                                          onClick={() => setEditReply({ messageId: null, replyId: null, text: '' })}
+                                          size="small"
+                                          sx={{
+                                            background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                                            color: 'white',
+                                            borderRadius: '8px',
+                                          }}
+                                        >
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    </form>
+                                  </motion.div>
+                                ) : (
+                                  <motion.div
+                                    className="p-4 bg-gradient-to-br from-white/3 to-white/8 backdrop-blur-lg rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200"
+                                    whileHover={{ x: 5 }}
+                                  >
+                                    <div className="flex items-start space-x-3">
+                                      <Avatar
+                                        sx={{
+                                          width: 36,
+                                          height: 36,
+                                          background: getAvatarColor(reply.name),
+                                          fontSize: '0.9rem',
+                                          fontWeight: 'bold',
+                                          border: '2px solid rgba(255, 255, 255, 0.1)',
+                                        }}
+                                      >
+                                        {reply.name?.charAt(0).toUpperCase() || 'U'}
+                                      </Avatar>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                          <span className="font-semibold text-white text-sm">{reply.name}</span>
+                                          <Chip
+                                            icon={<Clock className="w-2 h-2" />}
+                                            label={new Date(reply.timestamp).toLocaleString()}
+                                            size="small"
+                                            sx={{
+                                              background: 'rgba(139, 92, 246, 0.2)',
+                                              color: '#A78BFA',
+                                              fontSize: '0.7rem',
+                                              height: '20px',
+                                            }}
+                                          />
+                                        </div>
+                                        <p className="text-gray-300 text-sm leading-relaxed break-words">
+                                          {reply.text}
+                                        </p>
+                                        
+                                        {reply.userId === userId && (
+                                          <motion.div
+                                            className="flex space-x-2 mt-2 opacity-0 group-hover/reply:opacity-100 transition-opacity duration-200"
+                                          >
+                                            <motion.button
+                                              onClick={() => {
+                                                console.log('Edit reply clicked:', { messageId: msg._id, replyId: reply._id, userId, replyUserId: reply.userId });
+                                                setEditReply({ messageId: msg._id, replyId: reply._id, text: reply.text });
+                                              }}
+                                              className="flex items-center space-x-1 px-2 py-1 bg-teal-500/15 hover:bg-teal-500/25 rounded-md transition-colors"
+                                              whileHover={{ scale: 1.05 }}
+                                            >
+                                              <Edit3 className="w-2 h-2 text-teal-400" />
+                                              <span className="text-teal-400 text-xs">Edit</span>
+                                            </motion.button>
+                                            <motion.button
+                                              onClick={() => {
+                                                console.log('Delete reply clicked:', { messageId: msg._id, replyId: reply._id, userId, replyUserId: reply.userId });
+                                                handleDeleteReply(msg._id, reply._id);
+                                              }}
+                                              className="flex items-center space-x-1 px-2 py-1 bg-red-500/15 hover:bg-red-500/25 rounded-md transition-colors"
+                                              whileHover={{ scale: 1.05 }}
+                                            >
+                                              <Trash2 className="w-2 h-2 text-red-400" />
+                                              <span className="text-red-400 text-xs">Delete</span>
+                                            </motion.button>
+                                          </motion.div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </motion.div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
                   )}
-                </div>
-              ))}
-              <form onSubmit={(e) => handlePostReply(msg._id, e)} className="mt-2">
-                <TextField
-                  fullWidth
-                  label="Reply"
-                  value={newReply[msg._id] || ''}
-                  onChange={(e) => setNewReply({ ...newReply, [msg._id]: e.target.value })}
-                  variant="outlined"
-                  InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                  InputProps={{
-                    style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
-                  }}
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  className="post-button"
-                  disabled={!token || !userId || !name}
-                >
-                  Post Reply
-                </Button>
-              </form>
+
+                  {/* Reply Input */}
+                  <motion.div
+                    className="mt-4 pl-6"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <form onSubmit={(e) => handlePostReply(msg._id, e)} className="flex items-center space-x-3">
+                      <Avatar
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          background: getAvatarColor(name),
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                          border: '2px solid rgba(255, 255, 255, 0.1)',
+                        }}
+                      >
+                        {name?.charAt(0).toUpperCase() || 'U'}
+                      </Avatar>
+                      <TextField
+                        fullWidth
+                        placeholder="Write a reply..."
+                        value={newReply[msg._id] || ''}
+                        onChange={(e) => setNewReply({ ...newReply, [msg._id]: e.target.value })}
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            borderRadius: '20px',
+                            color: '#E5E7EB',
+                            '& fieldset': {
+                              borderColor: 'rgba(255, 255, 255, 0.1)',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: 'rgba(45, 212, 191, 0.3)',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: '#2DD4BF',
+                            },
+                          },
+                          '& .MuiInputBase-input::placeholder': {
+                            color: 'rgba(255, 255, 255, 0.4)',
+                          },
+                        }}
+                      />
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          disabled={!token || !userId || !name || !newReply[msg._id]?.trim()}
+                          sx={{
+                            background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%)',
+                            borderRadius: '12px',
+                            minWidth: '80px',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 100%)',
+                            },
+                            '&:disabled': {
+                              background: 'rgba(255, 255, 255, 0.05)',
+                            },
+                          }}
+                        >
+                          Reply
+                        </Button>
+                      </motion.div>
+                    </form>
+                  </motion.div>
+                </motion.div>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        
+        <div ref={messagesEndRef} />
+      </motion.div>
+
+      {/* Empty State */}
+      {messages.length === 0 && (
+        <motion.div
+          className="text-center py-20"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <motion.div
+            className="p-8 bg-gradient-to-br from-teal-900/20 to-cyan-900/20 backdrop-blur-xl rounded-3xl border border-teal-500/20 max-w-md mx-auto"
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="flex justify-center mb-6">
+              <motion.div
+                className="p-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              >
+                <MessageSquare className="w-12 h-12 text-white" />
+              </motion.div>
             </div>
-          </div>
-        ))}
-      </div>
+            <h3 className="text-2xl font-bold text-white mb-3">No Messages Yet</h3>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              Start the conversation! Share your thoughts and connect with the community.
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };

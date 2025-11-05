@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { TextField, Button } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TextField, Button, Avatar, Chip, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { handleError, handleSuccess } from '../utils';
+import { 
+  HelpCircle, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  MessageCircle, 
+  Clock, 
+  CheckCircle2,
+  AlertCircle,
+  Lightbulb,
+  TrendingUp,
+  ChevronDown
+} from 'lucide-react';
 import '../styles/QuestionSection.css';
 
 const QuestionSection = () => {
@@ -11,6 +24,8 @@ const QuestionSection = () => {
   const [editQuestion, setEditQuestion] = useState({ id: null, title: '', description: '' });
   const [newAnswer, setNewAnswer] = useState({});
   const [editAnswer, setEditAnswer] = useState({ questionId: null, answerId: null, text: '' });
+  const [expandedQuestions, setExpandedQuestions] = useState({});
+  
   const token = localStorage.getItem('jwtToken');
   const name = localStorage.getItem('name');
   const userId = localStorage.getItem('userId');
@@ -261,216 +276,724 @@ const QuestionSection = () => {
     }
   };
 
+  const toggleAnswers = (questionId) => {
+    setExpandedQuestions(prev => ({
+      ...prev,
+      [questionId]: !prev[questionId]
+    }));
+  };
+
+  const getAvatarColor = (name) => {
+    const colors = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    ];
+    return colors[name?.charCodeAt(0) % colors.length];
+  };
+
+  const getQuestionStatusColor = (answerCount) => {
+    if (answerCount === 0) return 'from-red-500 to-pink-500';
+    if (answerCount < 3) return 'from-yellow-500 to-orange-500';
+    return 'from-green-500 to-emerald-500';
+  };
+
+  const getQuestionStatusIcon = (answerCount) => {
+    if (answerCount === 0) return AlertCircle;
+    if (answerCount < 3) return HelpCircle;
+    return CheckCircle2;
+  };
+
   return (
     <motion.div
-      className="question-section-container"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.5, delay: 0.4 }}
+      className="max-w-6xl mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
     >
-      <h2 className="question-heading">Question Section</h2>
-      <form onSubmit={handlePostQuestion} className="question-form">
-        <TextField
-          fullWidth
-          label="Question Title"
-          value={newQuestion.title}
-          onChange={(e) => setNewQuestion({ ...newQuestion, title: e.target.value })}
-          variant="outlined"
-          required
-          InputLabelProps={{ style: { color: '#E5E7EB' } }}
-          InputProps={{
-            style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
-          }}
-          style={{ marginBottom: '10px' }}
-        />
-        <TextField
-          fullWidth
-          label="Question Description (Optional)"
-          value={newQuestion.description}
-          onChange={(e) => setNewQuestion({ ...newQuestion, description: e.target.value })}
-          variant="outlined"
-          multiline
-          rows={3}
-          InputLabelProps={{ style: { color: '#E5E7EB' } }}
-          InputProps={{
-            style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
-          }}
-        />
-        <Button
-          type="submit"
-          variant="contained"
-          className="post-button"
-          disabled={!token || !userId || !name}
+      {/* Header */}
+      <motion.div 
+        className="text-center mb-10"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="flex items-center justify-center mb-6">
+          <motion.div
+            className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl mr-4"
+            whileHover={{ rotate: 5, scale: 1.1 }}
+          >
+            <Lightbulb className="w-8 h-8 text-white" />
+          </motion.div>
+          <h2 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Q&A Hub
+          </h2>
+        </div>
+        <p className="text-gray-400 text-xl mb-6">Ask questions, share knowledge, and grow together</p>
+        
+        {/* Quick Stats */}
+        <motion.div 
+          className="flex justify-center space-x-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
         >
-          Post Question
-        </Button>
-      </form>
-      <div>
-        {questions.map((q) => (
-          <div key={q._id} className="mb-4 pb-4 border-b border-gray-600">
-            {editQuestion.id === q._id ? (
-              <form onSubmit={(e) => handleEditQuestion(q._id, e)} className="mb-2">
+          <div className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 rounded-full">
+            <HelpCircle className="w-4 h-4 text-purple-400" />
+            <span className="text-purple-300 font-medium">{questions.length} Questions</span>
+          </div>
+          <div className="flex items-center space-x-2 px-4 py-2 bg-green-500/20 rounded-full">
+            <CheckCircle2 className="w-4 h-4 text-green-400" />
+            <span className="text-green-300 font-medium">
+              {questions.reduce((acc, q) => acc + q.answers.length, 0)} Answers
+            </span>
+          </div>
+          <div className="flex items-center space-x-2 px-4 py-2 bg-blue-500/20 rounded-full">
+            <TrendingUp className="w-4 h-4 text-blue-400" />
+            <span className="text-blue-300 font-medium">Growing Community</span>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* Question Input Form */}
+      <motion.div
+        className="mb-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <motion.div
+          className="p-8 bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl rounded-3xl border border-purple-500/20 shadow-2xl"
+          whileHover={{ y: -2, boxShadow: '0 25px 50px rgba(139, 69, 193, 0.3)' }}
+        >
+          <div className="flex items-center mb-6">
+            <motion.div
+              className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl mr-4"
+              whileHover={{ rotate: 10 }}
+            >
+              <Plus className="w-6 h-6 text-white" />
+            </motion.div>
+            <h3 className="text-2xl font-bold text-white">Ask a New Question</h3>
+          </div>
+          
+          <form onSubmit={handlePostQuestion} className="space-y-6">
+            <div className="flex items-start space-x-4">
+              <Avatar
+                sx={{
+                  width: 56,
+                  height: 56,
+                  background: getAvatarColor(name),
+                  fontSize: '1.4rem',
+                  fontWeight: 'bold',
+                  border: '3px solid rgba(255, 255, 255, 0.2)',
+                }}
+              >
+                {name?.charAt(0).toUpperCase() || 'U'}
+              </Avatar>
+              <div className="flex-1 space-y-4">
                 <TextField
                   fullWidth
                   label="Question Title"
-                  value={editQuestion.title}
-                  onChange={(e) => setEditQuestion({ ...editQuestion, title: e.target.value })}
+                  placeholder="What would you like to know?"
+                  value={newQuestion.title}
+                  onChange={(e) => setNewQuestion({ ...newQuestion, title: e.target.value })}
                   variant="outlined"
                   required
-                  InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                  InputProps={{
-                    style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      borderRadius: '16px',
+                      color: '#E5E7EB',
+                      fontSize: '1.1rem',
+                      '& fieldset': {
+                        borderColor: 'rgba(147, 51, 234, 0.3)',
+                        borderWidth: '2px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(147, 51, 234, 0.6)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#9333EA',
+                        borderWidth: '2px',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'rgba(147, 51, 234, 0.8)',
+                      '&.Mui-focused': {
+                        color: '#9333EA',
+                      },
+                    },
+                    '& .MuiInputBase-input::placeholder': {
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      opacity: 1,
+                    },
                   }}
-                  style={{ marginBottom: '10px' }}
                 />
                 <TextField
                   fullWidth
-                  label="Question Description (Optional)"
-                  value={editQuestion.description}
-                  onChange={(e) => setEditQuestion({ ...editQuestion, description: e.target.value })}
+                  label="Description (Optional)"
+                  placeholder="Provide more context for your question..."
+                  value={newQuestion.description}
+                  onChange={(e) => setNewQuestion({ ...newQuestion, description: e.target.value })}
                   variant="outlined"
                   multiline
-                  rows={3}
-                  InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                  InputProps={{
-                    style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
+                  rows={4}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      borderRadius: '16px',
+                      color: '#E5E7EB',
+                      '& fieldset': {
+                        borderColor: 'rgba(147, 51, 234, 0.3)',
+                        borderWidth: '2px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(147, 51, 234, 0.6)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#9333EA',
+                        borderWidth: '2px',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'rgba(147, 51, 234, 0.8)',
+                      '&.Mui-focused': {
+                        color: '#9333EA',
+                      },
+                    },
+                    '& .MuiInputBase-input::placeholder': {
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      opacity: 1,
+                    },
                   }}
                 />
-                <Button
-                  type="submit"
-                  sx={{ color: '#2DD4BF', marginTop: '10px', marginRight: '10px' }}
+                <motion.div
+                  className="flex justify-end"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  Save
-                </Button>
-                <Button
-                  onClick={() => setEditQuestion({ id: null, title: '', description: '' })}
-                  sx={{ color: '#EC4899', marginTop: '10px' }}
-                >
-                  Cancel
-                </Button>
-              </form>
-            ) : (
-              <div className="question-container">
-                <div>
-                  <h3 className="question-title">{q.title}</h3>
-                  <p className="question-description">
-                    <strong>{q.name}</strong>: {q.description}{' '}
-                    <em className="question-timestamp">
-                      ({new Date(q.timestamp).toLocaleString()})
-                    </em>
-                  </p>
-                </div>
-                {q.userId === userId && (
-                  <div className="flex space-x-2">
-                    <Button
-                      sx={{ color: '#2DD4BF', fontSize: '0.8rem' }}
-                      onClick={() => {
-                        console.log('Edit question clicked:', { questionId: q._id, userId, qUserId: q.userId });
-                        setEditQuestion({ id: q._id, title: q.title, description: q.description });
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      sx={{ color: '#EC4899', fontSize: '0.8rem' }}
-                      onClick={() => {
-                        console.log('Delete question clicked:', { questionId: q._id, userId, qUserId: q.userId });
-                        handleDeleteQuestion(q._id);
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                )}
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={!token || !userId || !name || !newQuestion.title.trim()}
+                    sx={{
+                      background: 'linear-gradient(135deg, #9333EA 0%, #EC4899 100%)',
+                      borderRadius: '16px',
+                      padding: '12px 32px',
+                      fontSize: '1.1rem',
+                      fontWeight: 'bold',
+                      minWidth: '150px',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #7C3AED 0%, #DB2777 100%)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 12px 35px rgba(147, 51, 234, 0.4)',
+                      },
+                      '&:disabled': {
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        color: 'rgba(255, 255, 255, 0.4)',
+                      },
+                    }}
+                    startIcon={<HelpCircle className="w-5 h-5" />}
+                  >
+                    Ask Question
+                  </Button>
+                </motion.div>
               </div>
-            )}
-            <div className="ml-6 mt-2">
-              {q.answers.map((answer) => (
-                <div key={answer._id} className="mb-2">
-                  {editAnswer.questionId === q._id && editAnswer.answerId === answer._id ? (
-                    <form onSubmit={(e) => handleEditAnswer(q._id, answer._id, e)}>
+            </div>
+          </form>
+        </motion.div>
+      </motion.div>
+
+      {/* Questions List */}
+      <motion.div
+        className="space-y-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        <AnimatePresence>
+          {questions.map((question, index) => {
+            const StatusIcon = getQuestionStatusIcon(question.answers.length);
+            return (
+              <motion.div
+                key={question._id}
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -30, scale: 0.95 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group relative"
+              >
+                {editQuestion.id === question._id ? (
+                  <motion.div
+                    className="p-8 bg-gradient-to-br from-blue-900/30 to-purple-900/30 backdrop-blur-xl rounded-3xl border border-blue-500/30 shadow-2xl"
+                    initial={{ scale: 0.95 }}
+                    animate={{ scale: 1 }}
+                  >
+                    <div className="flex items-center mb-6">
+                      <Edit3 className="w-6 h-6 text-blue-400 mr-3" />
+                      <h3 className="text-xl font-bold text-white">Edit Question</h3>
+                    </div>
+                    <form onSubmit={(e) => handleEditQuestion(question._id, e)} className="space-y-4">
                       <TextField
                         fullWidth
-                        value={editAnswer.text}
-                        onChange={(e) => setEditAnswer({ ...editAnswer, text: e.target.value })}
+                        label="Question Title"
+                        value={editQuestion.title}
+                        onChange={(e) => setEditQuestion({ ...editQuestion, title: e.target.value })}
                         variant="outlined"
-                        InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                        InputProps={{
-                          style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
+                        required
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            borderRadius: '16px',
+                            color: '#E5E7EB',
+                            '& fieldset': { borderColor: 'rgba(59, 130, 246, 0.5)' },
+                            '&:hover fieldset': { borderColor: 'rgba(59, 130, 246, 0.8)' },
+                            '&.Mui-focused fieldset': { borderColor: '#3B82F6' },
+                          },
+                          '& .MuiInputLabel-root': { color: 'rgba(59, 130, 246, 0.8)' },
                         }}
                       />
-                      <Button
-                        type="submit"
-                        sx={{ color: '#2DD4BF', marginTop: '10px', marginRight: '10px' }}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        onClick={() => setEditAnswer({ questionId: null, answerId: null, text: '' })}
-                        sx={{ color: '#EC4899', marginTop: '10px' }}
-                      >
-                        Cancel
-                      </Button>
+                      <TextField
+                        fullWidth
+                        label="Description"
+                        value={editQuestion.description}
+                        onChange={(e) => setEditQuestion({ ...editQuestion, description: e.target.value })}
+                        variant="outlined"
+                        multiline
+                        rows={3}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            borderRadius: '16px',
+                            color: '#E5E7EB',
+                            '& fieldset': { borderColor: 'rgba(59, 130, 246, 0.5)' },
+                            '&:hover fieldset': { borderColor: 'rgba(59, 130, 246, 0.8)' },
+                            '&.Mui-focused fieldset': { borderColor: '#3B82F6' },
+                          },
+                          '& .MuiInputLabel-root': { color: 'rgba(59, 130, 246, 0.8)' },
+                        }}
+                      />
+                      <div className="flex space-x-3 justify-end">
+                        <Button
+                          type="submit"
+                          sx={{
+                            background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                            color: 'white',
+                            borderRadius: '12px',
+                            padding: '10px 24px',
+                            fontWeight: 'bold',
+                            '&:hover': { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' },
+                          }}
+                        >
+                          Save Changes
+                        </Button>
+                        <Button
+                          onClick={() => setEditQuestion({ id: null, title: '', description: '' })}
+                          sx={{
+                            background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                            color: 'white',
+                            borderRadius: '12px',
+                            padding: '10px 24px',
+                            fontWeight: 'bold',
+                            '&:hover': { background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)' },
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </form>
-                  ) : (
-                    <div className="answer-container">
-                      <p className="answer-text">
-                        <strong>{answer.name}</strong>: {answer.text}{' '}
-                        <em className="question-timestamp">
-                          ({new Date(answer.timestamp).toLocaleString()})
-                        </em>
-                      </p>
-                      {answer.userId === userId && (
-                        <div className="flex space-x-2">
-                          <Button
-                            sx={{ color: '#2DD4BF', fontSize: '0.8rem' }}
-                            onClick={() => {
-                              console.log('Edit answer clicked:', { questionId: q._id, answerId: answer._id, userId, answerUserId: answer.userId });
-                              setEditAnswer({ questionId: q._id, answerId: answer._id, text: answer.text });
-                            }}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    className="p-8 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl rounded-3xl border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:border-white/20"
+                    whileHover={{ y: -3 }}
+                  >
+                    {/* Question Header */}
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-start space-x-4 flex-1">
+                        <Avatar
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            background: getAvatarColor(question.name),
+                            fontSize: '1.4rem',
+                            fontWeight: 'bold',
+                            border: '3px solid rgba(255, 255, 255, 0.2)',
+                          }}
+                        >
+                          {question.name?.charAt(0).toUpperCase() || 'U'}
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <span className="font-bold text-white text-xl">{question.name}</span>
+                            <Chip
+                              icon={<Clock className="w-3 h-3" />}
+                              label={new Date(question.timestamp).toLocaleString()}
+                              size="small"
+                              sx={{
+                                background: 'rgba(139, 92, 246, 0.2)',
+                                color: '#A78BFA',
+                                fontSize: '0.75rem',
+                              }}
+                            />
+                          </div>
+                          <motion.h3 
+                            className="text-2xl font-bold text-white mb-3 leading-tight"
+                            whileHover={{ x: 5 }}
                           >
-                            Edit
-                          </Button>
-                          <Button
-                            sx={{ color: '#EC4899', fontSize: '0.8rem' }}
-                            onClick={() => {
-                              console.log('Delete answer clicked:', { questionId: q._id, answerId: answer._id, userId, answerUserId: answer.userId });
-                              handleDeleteAnswer(q._id, answer._id);
-                            }}
-                          >
-                            Delete
-                          </Button>
+                            {question.title}
+                          </motion.h3>
+                          {question.description && (
+                            <p className="text-gray-300 text-lg leading-relaxed">
+                              {question.description}
+                            </p>
+                          )}
                         </div>
-                      )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <motion.div
+                          className={`flex items-center space-x-2 px-3 py-2 bg-gradient-to-r ${getQuestionStatusColor(question.answers.length)} rounded-full`}
+                          whileHover={{ scale: 1.05 }}
+                        >
+                          <StatusIcon className="w-4 h-4 text-white" />
+                          <span className="text-white font-medium text-sm">
+                            {question.answers.length} {question.answers.length === 1 ? 'Answer' : 'Answers'}
+                          </span>
+                        </motion.div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
-              <form onSubmit={(e) => handlePostAnswer(q._id, e)} className="mt-2">
-                <TextField
-                  fullWidth
-                  label="Answer"
-                  value={newAnswer[q._id] || ''}
-                  onChange={(e) => setNewAnswer({ ...newAnswer, [q._id]: e.target.value })}
-                  variant="outlined"
-                  InputLabelProps={{ style: { color: '#E5E7EB' } }}
-                  InputProps={{
-                    style: { color: '#E5E7EB', backgroundColor: '#1E1B4B', borderRadius: '8px' },
-                  }}
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  className="post-button"
-                  disabled={!token || !userId || !name}
+
+                    {/* Action Buttons for Question Owner */}
+                    {question.userId === userId && (
+                      <motion.div
+                        className="flex space-x-2 mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 0, x: 0 }}
+                        whileHover={{ opacity: 1 }}
+                      >
+                        <motion.button
+                          onClick={() => {
+                            console.log('Edit question clicked:', { questionId: question._id, userId, qUserId: question.userId });
+                            setEditQuestion({ id: question._id, title: question.title, description: question.description });
+                          }}
+                          className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 rounded-xl transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Edit3 className="w-4 h-4 text-purple-400" />
+                          <span className="text-purple-400 font-medium">Edit Question</span>
+                        </motion.button>
+                        <motion.button
+                          onClick={() => {
+                            console.log('Delete question clicked:', { questionId: question._id, userId, qUserId: question.userId });
+                            handleDeleteQuestion(question._id);
+                          }}
+                          className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-xl transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                          <span className="text-red-400 font-medium">Delete</span>
+                        </motion.button>
+                      </motion.div>
+                    )}
+
+                    <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', margin: '20px 0' }} />
+
+                    {/* Answers Section */}
+                    {question.answers && question.answers.length > 0 && (
+                      <motion.div className="mb-6">
+                        <motion.button
+                          onClick={() => toggleAnswers(question._id)}
+                          className="flex items-center space-x-3 text-teal-400 hover:text-teal-300 mb-6 transition-colors"
+                          whileHover={{ x: 5 }}
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          <span className="font-semibold text-lg">
+                            {expandedQuestions[question._id] ? 'Hide' : 'View'} {question.answers.length} answers
+                          </span>
+                          <motion.div
+                            animate={{ rotate: expandedQuestions[question._id] ? 180 : 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <ChevronDown className="w-5 h-5 text-teal-400" />
+                          </motion.div>
+                        </motion.button>
+
+                        <AnimatePresence>
+                          {expandedQuestions[question._id] && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-4 pl-6 border-l-2 border-teal-400/30"
+                            >
+                              {question.answers.map((answer, answerIndex) => (
+                                <motion.div
+                                  key={answer._id}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: answerIndex * 0.1 }}
+                                  className="group/answer relative"
+                                >
+                                  {editAnswer.questionId === question._id && editAnswer.answerId === answer._id ? (
+                                    <motion.div
+                                      className="p-6 bg-gradient-to-br from-green-800/20 to-teal-800/20 rounded-2xl border border-green-400/20"
+                                      initial={{ scale: 0.95 }}
+                                      animate={{ scale: 1 }}
+                                    >
+                                      <form onSubmit={(e) => handleEditAnswer(question._id, answer._id, e)} className="space-y-4">
+                                        <TextField
+                                          fullWidth
+                                          multiline
+                                          rows={3}
+                                          value={editAnswer.text}
+                                          onChange={(e) => setEditAnswer({ ...editAnswer, text: e.target.value })}
+                                          variant="outlined"
+                                          sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                              borderRadius: '16px',
+                                              color: '#E5E7EB',
+                                              '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.5)' },
+                                              '&:hover fieldset': { borderColor: 'rgba(16, 185, 129, 0.8)' },
+                                              '&.Mui-focused fieldset': { borderColor: '#10B981' },
+                                            },
+                                          }}
+                                        />
+                                        <div className="flex space-x-2">
+                                          <Button
+                                            type="submit"
+                                            sx={{
+                                              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                                              color: 'white',
+                                              borderRadius: '10px',
+                                              padding: '8px 20px',
+                                              fontWeight: 'bold',
+                                            }}
+                                          >
+                                            Save Answer
+                                          </Button>
+                                          <Button
+                                            onClick={() => setEditAnswer({ questionId: null, answerId: null, text: '' })}
+                                            sx={{
+                                              background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                                              color: 'white',
+                                              borderRadius: '10px',
+                                              padding: '8px 20px',
+                                              fontWeight: 'bold',
+                                            }}
+                                          >
+                                            Cancel
+                                          </Button>
+                                        </div>
+                                      </form>
+                                    </motion.div>
+                                  ) : (
+                                    <motion.div
+                                      className="p-6 bg-gradient-to-br from-white/3 to-white/8 backdrop-blur-lg rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200"
+                                      whileHover={{ x: 5, scale: 1.01 }}
+                                    >
+                                      <div className="flex items-start space-x-4">
+                                        <Avatar
+                                          sx={{
+                                            width: 44,
+                                            height: 44,
+                                            background: getAvatarColor(answer.name),
+                                            fontSize: '1rem',
+                                            fontWeight: 'bold',
+                                            border: '2px solid rgba(255, 255, 255, 0.1)',
+                                          }}
+                                        >
+                                          {answer.name?.charAt(0).toUpperCase() || 'U'}
+                                        </Avatar>
+                                        <div className="flex-1">
+                                          <div className="flex items-center space-x-3 mb-3">
+                                            <span className="font-bold text-white text-lg">{answer.name}</span>
+                                            <Chip
+                                              icon={<Clock className="w-2 h-2" />}
+                                              label={new Date(answer.timestamp).toLocaleString()}
+                                              size="small"
+                                              sx={{
+                                                background: 'rgba(45, 212, 191, 0.2)',
+                                                color: '#2DD4BF',
+                                                fontSize: '0.7rem',
+                                                height: '22px',
+                                              }}
+                                            />
+                                          </div>
+                                          <p className="text-gray-200 text-lg leading-relaxed break-words">
+                                            {answer.text}
+                                          </p>
+                                          
+                                          {answer.userId === userId && (
+                                            <motion.div
+                                              className="flex space-x-2 mt-4 opacity-0 group-hover/answer:opacity-100 transition-opacity duration-200"
+                                            >
+                                              <motion.button
+                                                onClick={() => {
+                                                  console.log('Edit answer clicked:', { questionId: question._id, answerId: answer._id, userId, answerUserId: answer.userId });
+                                                  setEditAnswer({ questionId: question._id, answerId: answer._id, text: answer.text });
+                                                }}
+                                                className="flex items-center space-x-1 px-3 py-1 bg-teal-500/15 hover:bg-teal-500/25 rounded-lg transition-colors"
+                                                whileHover={{ scale: 1.05 }}
+                                              >
+                                                <Edit3 className="w-3 h-3 text-teal-400" />
+                                                <span className="text-teal-400 text-sm font-medium">Edit</span>
+                                              </motion.button>
+                                              <motion.button
+                                                onClick={() => {
+                                                  console.log('Delete answer clicked:', { questionId: question._id, answerId: answer._id, userId, answerUserId: answer.userId });
+                                                  handleDeleteAnswer(question._id, answer._id);
+                                                }}
+                                                className="flex items-center space-x-1 px-3 py-1 bg-red-500/15 hover:bg-red-500/25 rounded-lg transition-colors"
+                                                whileHover={{ scale: 1.05 }}
+                                              >
+                                                <Trash2 className="w-3 h-3 text-red-400" />
+                                                <span className="text-red-400 text-sm font-medium">Delete</span>
+                                              </motion.button>
+                                            </motion.div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </motion.div>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    )}
+
+                    {/* Answer Input */}
+                    <motion.div
+                      className="pt-4"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <div className="flex items-center mb-4">
+                        <Lightbulb className="w-5 h-5 text-yellow-400 mr-2" />
+                        <span className="text-gray-300 font-medium">Share your knowledge</span>
+                      </div>
+                      <form onSubmit={(e) => handlePostAnswer(question._id, e)} className="flex items-end space-x-4">
+                        <Avatar
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            background: getAvatarColor(name),
+                            fontSize: '1rem',
+                            fontWeight: 'bold',
+                            border: '2px solid rgba(255, 255, 255, 0.1)',
+                          }}
+                        >
+                          {name?.charAt(0).toUpperCase() || 'U'}
+                        </Avatar>
+                        <TextField
+                          fullWidth
+                          placeholder="Write your answer..."
+                          value={newAnswer[question._id] || ''}
+                          onChange={(e) => setNewAnswer({ ...newAnswer, [question._id]: e.target.value })}
+                          variant="outlined"
+                          multiline
+                          maxRows={4}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                              borderRadius: '20px',
+                              color: '#E5E7EB',
+                              fontSize: '1rem',
+                              '& fieldset': {
+                                borderColor: 'rgba(255, 255, 255, 0.15)',
+                                borderWidth: '2px',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: 'rgba(45, 212, 191, 0.4)',
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#2DD4BF',
+                                borderWidth: '2px',
+                              },
+                            },
+                            '& .MuiInputBase-input::placeholder': {
+                              color: 'rgba(255, 255, 255, 0.4)',
+                              opacity: 1,
+                            },
+                          }}
+                        />
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={!token || !userId || !name || !newAnswer[question._id]?.trim()}
+                            sx={{
+                              background: 'linear-gradient(135deg, #2DD4BF 0%, #10B981 100%)',
+                              borderRadius: '16px',
+                              padding: '12px 24px',
+                              fontSize: '1rem',
+                              fontWeight: 'bold',
+                              minWidth: '120px',
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #0D9488 0%, #059669 100%)',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 10px 30px rgba(45, 212, 191, 0.4)',
+                              },
+                              '&:disabled': {
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                color: 'rgba(255, 255, 255, 0.4)',
+                              },
+                            }}
+                            startIcon={<CheckCircle2 className="w-5 h-5" />}
+                          >
+                            Answer
+                          </Button>
+                        </motion.div>
+                      </form>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+
+        {/* Empty State */}
+        {questions.length === 0 && (
+          <motion.div
+            className="text-center py-20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <motion.div
+              className="p-8 bg-gradient-to-br from-purple-900/20 to-pink-900/20 backdrop-blur-xl rounded-3xl border border-purple-500/20 max-w-md mx-auto"
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex justify-center mb-6">
+                <motion.div
+                  className="p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                  animate={{ rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
                 >
-                  Post Answer
-                </Button>
-              </form>
-            </div>
-          </div>
-        ))}
-      </div>
+                  <HelpCircle className="w-12 h-12 text-white" />
+                </motion.div>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">No Questions Yet</h3>
+              <p className="text-gray-300 text-lg leading-relaxed">
+                Be the first to ask a question and start the conversation! 
+                Share your curiosity with the community.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </motion.div>
     </motion.div>
   );
 };
