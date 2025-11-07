@@ -23,7 +23,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ['http://localhost:5173', 'https://hoppscotch.io', 'http://localhost:3001'],
+    origin: ['http://localhost:5173', 'https://hoppscotch.io', 'http://localhost:3001','https://witwiz-hub.vercel.app'
+  ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Authorization', 'Content-Type'],
     credentials: true,
