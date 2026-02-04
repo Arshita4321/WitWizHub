@@ -4,6 +4,10 @@ import { motion } from 'framer-motion';
 import { TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
 import { handleError, handleSuccess } from "../utils";
 
+// Use environment variable for API base URL
+// Falls back to localhost during local development if .env is missing
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 function Login() {
   const [loginInfo, setLoginInfo] = useState({
     email: '',
@@ -32,7 +36,6 @@ function Login() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setLoginInfo((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
     if (error) setError('');
   };
 
@@ -50,10 +53,8 @@ function Login() {
     
     const { email, password } = loginInfo;
     
-    // Clear previous errors
     setError('');
     
-    // Validate inputs
     if (!email?.trim() || !password?.trim()) {
       const errorMsg = 'Please fill in all fields';
       handleError(errorMsg);
@@ -77,8 +78,9 @@ function Login() {
       };
 
       console.log('Login payload:', payload);
+      console.log('Calling:', `${API_BASE_URL}/auth/login`);
 
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +92,6 @@ function Login() {
       console.log('Login response:', data);
 
       if (data.success) {
-        // Store user data
         localStorage.setItem('jwtToken', data.jwtToken);
         localStorage.setItem('name', data.name);
         localStorage.setItem('userId', data.userId);
@@ -103,7 +104,6 @@ function Login() {
 
         handleSuccess(data.message);
         
-        // Redirect to intended page or home
         const from = location.state?.from?.pathname || '/home';
         console.log('Login success - Redirecting to:', from);
         navigate(from, { replace: true });
@@ -114,7 +114,9 @@ function Login() {
       }
     } catch (err) {
       console.error('Login error:', err);
-      const errorMsg = 'Unable to connect to server. Please try again.';
+      const errorMsg = err.message.includes('Failed to fetch')
+        ? 'Cannot connect to server. Is the backend running / deployed correctly?'
+        : 'Unable to connect to server. Please try again.';
       handleError(errorMsg);
       setError(errorMsg);
     } finally {
@@ -126,7 +128,6 @@ function Login() {
     e.preventDefault();
     
     const trimmedEmail = forgotPasswordEmail.trim();
-    console.log('Forgot Password email:', trimmedEmail);
     
     if (!trimmedEmail) {
       const errorMsg = 'Please enter your email address';
@@ -148,8 +149,9 @@ function Login() {
     try {
       const payload = { email: trimmedEmail.toLowerCase() };
       console.log('Forgot Password payload:', payload);
+      console.log('Calling:', `${API_BASE_URL}/auth/forgot-password`);
 
-      const response = await fetch('http://localhost:3000/auth/forgot-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +174,9 @@ function Login() {
       }
     } catch (err) {
       console.error('Forgot Password error:', err);
-      const errorMsg = 'Unable to connect to server. Please try again.';
+      const errorMsg = err.message.includes('Failed to fetch')
+        ? 'Cannot connect to server. Check your internet or backend status.'
+        : 'Unable to connect to server. Please try again.';
       handleError(errorMsg);
       setError(errorMsg);
     } finally {
@@ -216,6 +220,7 @@ function Login() {
         )}
 
         <form onSubmit={handleLogin} className="space-y-6">
+          {/* Email field */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
             <TextField
               fullWidth
@@ -227,9 +232,7 @@ function Login() {
               variant="outlined"
               required
               disabled={loading}
-              InputLabelProps={{ 
-                style: { color: '#E5E7EB' } 
-              }}
+              InputLabelProps={{ style: { color: '#E5E7EB' } }}
               InputProps={{
                 style: {
                   color: '#E5E7EB',
@@ -239,20 +242,15 @@ function Login() {
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#6B7280',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#2DD4BF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#2DD4BF',
-                  },
+                  '& fieldset': { borderColor: '#6B7280' },
+                  '&:hover fieldset': { borderColor: '#2DD4BF' },
+                  '&.Mui-focused fieldset': { borderColor: '#2DD4BF' },
                 },
               }}
             />
           </motion.div>
 
+          {/* Password field */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }} style={{ position: 'relative' }}>
             <TextField
               fullWidth
@@ -264,9 +262,7 @@ function Login() {
               variant="outlined"
               required
               disabled={loading}
-              InputLabelProps={{ 
-                style: { color: '#E5E7EB' } 
-              }}
+              InputLabelProps={{ style: { color: '#E5E7EB' } }}
               InputProps={{
                 style: {
                   color: '#E5E7EB',
@@ -276,15 +272,9 @@ function Login() {
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#6B7280',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#2DD4BF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#2DD4BF',
-                  },
+                  '& fieldset': { borderColor: '#6B7280' },
+                  '&:hover fieldset': { borderColor: '#2DD4BF' },
+                  '&.Mui-focused fieldset': { borderColor: '#2DD4BF' },
                 },
               }}
             />
@@ -305,12 +295,7 @@ function Login() {
             />
           </motion.div>
 
-          <motion.div
-            className="text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-          >
+          <motion.div className="text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.5 }}>
             <button
               type="button"
               className="text-teal-400 hover:text-pink-500 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -375,6 +360,7 @@ function Login() {
         </motion.p>
       </motion.div>
 
+      {/* Forgot Password Dialog */}
       <Dialog
         open={showForgotPassword}
         onClose={handleForgotPasswordClose}
@@ -421,15 +407,9 @@ function Login() {
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: '#6B7280',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#2DD4BF',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#2DD4BF',
-                },
+                '& fieldset': { borderColor: '#6B7280' },
+                '&:hover fieldset': { borderColor: '#2DD4BF' },
+                '&.Mui-focused fieldset': { borderColor: '#2DD4BF' },
               },
             }}
           />

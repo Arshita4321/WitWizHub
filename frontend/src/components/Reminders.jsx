@@ -3,12 +3,15 @@ import React, { useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
+// Consistent API base URL (same pattern as Login, Signup, Profile, Notes, StudyPlanner, etc.)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const Reminders = () => {
   useEffect(() => {
     const fetchReminders = async () => {
       try {
         const token = localStorage.getItem('jwtToken'); // Your stored JWT
-        const response = await axios.get('http://localhost:3000/api/study-planner/reminders/upcoming', {
+        const response = await axios.get(`${API_BASE_URL}/api/study-planner/reminders/upcoming`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

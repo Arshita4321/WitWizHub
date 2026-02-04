@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { Box, TextField, Button, Typography, IconButton, Alert } from '@mui/material';
 import { AddCircle, RemoveCircle } from '@mui/icons-material';
 import toast from 'react-hot-toast';
+
+// Consistent API base URL (same pattern as Login, Signup, Profile, Notes, StudyPlanner, etc.)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const StudyPlanForm = ({ onPlanCreated }) => {
   const [fieldOfStudy, setFieldOfStudy] = useState('');
@@ -61,7 +64,7 @@ const StudyPlanForm = ({ onPlanCreated }) => {
       }));
 
       const response = await axios.post(
-        'http://localhost:3000/api/study-planner/plans',
+        `${API_BASE_URL}/api/study-planner/plans`,
         {
           fieldOfStudy,
           subjects: formattedSubjects,

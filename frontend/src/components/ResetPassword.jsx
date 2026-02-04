@@ -4,6 +4,9 @@ import { motion } from 'framer-motion';
 import { TextField, Button, CircularProgress, Alert } from '@mui/material';
 import { CheckCircle, Error, Visibility, VisibilityOff } from '@mui/icons-material';
 
+// Consistent API base URL (same pattern as Login, Signup, Profile, Notes, etc.)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 function ResetPassword() {
   const [passwords, setPasswords] = useState({
     newPassword: '',
@@ -124,7 +127,7 @@ function ResetPassword() {
       
       console.log('Reset Password request:', { token: token.substring(0, 10) + '...' });
       
-      const response = await fetch('http://localhost:3000/auth/reset-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

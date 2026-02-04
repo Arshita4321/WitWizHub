@@ -7,6 +7,9 @@ import GameRoom from '../components/GameRoom';
 import Watermark from '../components/Watermark';
 import { FaGamepad } from 'react-icons/fa';
 
+// Use environment variable (same as your other components)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 let socket = null;
 
 const RelayGame = () => {
@@ -29,7 +32,7 @@ const RelayGame = () => {
       socket.disconnect();
     }
 
-    socket = io('http://localhost:3000', {
+    socket = io(API_BASE_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,
@@ -58,7 +61,7 @@ const RelayGame = () => {
     // Fetch user ID
     const fetchUserId = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/game/user-object-id', {
+        const response = await fetch(`${API_BASE_URL}/api/game/user-object-id`, {
           headers: { Authorization: `Bearer ${token}` },
           credentials: 'include',
         });
@@ -211,7 +214,7 @@ const RelayGame = () => {
     try {
       console.log('Creating room with:', { topic, roomId: roomIdToUse, userId });
       
-      const response = await fetch('http://localhost:3000/api/game/create', {
+      const response = await fetch(`${API_BASE_URL}/api/game/create`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('jwtToken')}`,
@@ -267,7 +270,7 @@ const RelayGame = () => {
     try {
       console.log('Joining room:', { roomId, userId });
       
-      const response = await fetch('http://localhost:3000/api/game/join', {
+      const response = await fetch(`${API_BASE_URL}/api/game/join`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('jwtToken')}`,

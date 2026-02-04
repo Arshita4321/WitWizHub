@@ -6,6 +6,9 @@ import { handleError, handleSuccess } from '../utils';
 import { Send, Edit3, Trash2, Reply, MessageSquare, Clock, User, Sparkles } from 'lucide-react';
 import '../styles/ChatSection.css';
 
+// Consistent API base URL (same as Login, Signup, Profile, Notes, etc.)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const ChatSection = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -41,7 +44,7 @@ const ChatSection = () => {
     const fetchMessages = async () => {
       if (!token || !userId) return;
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/messages`, {
+        const response = await fetch(`${API_BASE_URL}/api/messages`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -85,7 +88,7 @@ const ChatSection = () => {
     const payload = { text: trimmedMessage, name, images: [] };
     console.log('POST /api/messages payload:', payload);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/messages`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +129,7 @@ const ChatSection = () => {
     const payload = { text: trimmedText, name, images: [] };
     console.log('PUT /api/messages payload:', payload);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/messages/${messageId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${messageId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +154,7 @@ const ChatSection = () => {
 
   const handleDeleteMessage = async (messageId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/messages/${messageId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${messageId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -187,7 +190,7 @@ const ChatSection = () => {
     const payload = { text: replyText, name, images: [] };
     console.log('POST /api/messages/replies payload:', payload);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/messages/${messageId}/replies`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${messageId}/replies`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +231,7 @@ const ChatSection = () => {
     const payload = { text: trimmedText, name, images: [] };
     console.log('PUT /api/messages/replies payload:', payload);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/messages/${messageId}/replies/${replyId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${messageId}/replies/${replyId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -253,7 +256,7 @@ const ChatSection = () => {
 
   const handleDeleteReply = async (messageId, replyId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/messages/${messageId}/replies/${replyId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${messageId}/replies/${replyId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -461,10 +464,6 @@ const ChatSection = () => {
                           background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                           color: 'white',
                           borderRadius: '12px',
-                          padding: '8px 20px',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                          },
                         }}
                       >
                         Save Changes
@@ -475,10 +474,6 @@ const ChatSection = () => {
                           background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
                           color: 'white',
                           borderRadius: '12px',
-                          padding: '8px 20px',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
-                          },
                         }}
                       >
                         Cancel
@@ -540,7 +535,6 @@ const ChatSection = () => {
                             }}
                             className="flex items-center space-x-1 px-3 py-1 bg-teal-500/20 hover:bg-teal-500/30 rounded-lg transition-colors"
                             whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                           >
                             <Edit3 className="w-3 h-3 text-teal-400" />
                             <span className="text-teal-400 text-sm">Edit</span>
@@ -552,7 +546,6 @@ const ChatSection = () => {
                             }}
                             className="flex items-center space-x-1 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
                             whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                           >
                             <Trash2 className="w-3 h-3 text-red-400" />
                             <span className="text-red-400 text-sm">Delete</span>

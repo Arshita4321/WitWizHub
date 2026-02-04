@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QuizSetup from '../components/QuizSetup';
 import Loading from '../components/Loading';
 import QuizPage from '../components/QuizPage';
 import QuizResults from '../components/QuizResults';
 import { getQuizQuestions, submitQuiz } from '../api/quizApi';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Use environment variable (same pattern as Login, Chatbot, Profile, Notes, etc.)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const Quiz = () => {
   const [questions, setQuestions] = useState(null);
@@ -17,6 +20,8 @@ const Quiz = () => {
     setError('');
     try {
       const token = localStorage.getItem('jwtToken');
+      // The getQuizQuestions function should already use the correct base URL
+      // But to be explicit and consistent, you can pass it if needed in the future
       const { questions } = await getQuizQuestions(subject, topics, numQuestions, level, token);
       setQuestions(questions);
       setLoading(false);
@@ -135,4 +140,3 @@ const Quiz = () => {
 };
 
 export default Quiz;
-

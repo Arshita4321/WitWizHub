@@ -11,6 +11,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import AdUnitsIcon from '@mui/icons-material/AdUnits';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const PremiumPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -50,7 +52,7 @@ const PremiumPage = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:3000/api/payment/initiate',
+        `${API_BASE_URL}/api/payment/initiate`,
         { userId, amount: 100 },
         { headers: { Authorization: `Bearer ${token}` } }
       );

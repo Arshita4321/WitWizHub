@@ -5,6 +5,9 @@ import { Box, Typography, IconButton, LinearProgress, Button } from '@mui/materi
 import { Close, AccessTime, CheckCircle, EventAvailable, Assignment, Add, Edit, Delete } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 
+// Consistent API base URL (same pattern as Login, Signup, Profile, Notes, StudyPlanner, etc.)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const TopicScheduleModal = ({ plan, onClose, onUpdatePlan }) => {
   const [localPlan, setLocalPlan] = useState(plan);
 
@@ -67,14 +70,14 @@ const TopicScheduleModal = ({ plan, onClose, onUpdatePlan }) => {
 
       // Update the topic using the correct endpoint
       const response = await axios.put(
-        `http://localhost:3000/api/study-planner/subjects/${subjectId}/topics/${topic._id}`,
+        `${API_BASE_URL}/api/study-planner/subjects/${subjectId}/topics/${topic._id}`,
         { completed: newCompletedStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Fetch the updated plan to ensure progress is correct
       const planResponse = await axios.get(
-        `http://localhost:3000/api/study-planner/plans/${plan._id}`,
+        `${API_BASE_URL}/api/study-planner/plans/${plan._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -111,7 +114,7 @@ const TopicScheduleModal = ({ plan, onClose, onUpdatePlan }) => {
         console.log('Adding topic:', { subjectId, name });
 
         const res = await axios.post(
-          `http://localhost:3000/api/study-planner/subjects/${subjectId}/topics`,
+          `${API_BASE_URL}/api/study-planner/subjects/${subjectId}/topics`,
           { name },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -142,7 +145,7 @@ const TopicScheduleModal = ({ plan, onClose, onUpdatePlan }) => {
         console.log('Editing topic:', { subjectId, topicId, newName });
 
         const res = await axios.put(
-          `http://localhost:3000/api/study-planner/subjects/${subjectId}/topics/${topicId}`,
+          `${API_BASE_URL}/api/study-planner/subjects/${subjectId}/topics/${topicId}`,
           { name: newName },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -181,7 +184,7 @@ const TopicScheduleModal = ({ plan, onClose, onUpdatePlan }) => {
         });
 
         const res = await axios.delete(
-          `http://localhost:3000/api/study-planner/subjects/${subjectId}/topics/${topicId}`,
+          `${API_BASE_URL}/api/study-planner/subjects/${subjectId}/topics/${topicId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

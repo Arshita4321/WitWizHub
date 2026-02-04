@@ -6,6 +6,9 @@ import { toast } from 'react-hot-toast';
 import { FaPlus, FaGraduationCap, FaCalendarAlt, FaTrophy, FaStar, FaBookOpen, FaChartLine } from 'react-icons/fa';
 import '../styles/profile.css';
 
+// Use environment variable (same pattern as your other components)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 // Generate floating particle positions
 const generateParticlePositions = () => {
   const particles = [];
@@ -66,7 +69,7 @@ const Profile = () => {
       }
 
       try {
-        const response = await axios.get('http://localhost:3000/api/profile', {
+        const response = await axios.get(`${API_BASE_URL}/api/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log('Profile fetched:', response.data);

@@ -18,6 +18,9 @@ import {
 } from 'lucide-react';
 import '../styles/QuestionSection.css';
 
+// Consistent API base URL (same pattern as all other components)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const QuestionSection = () => {
   const [questions, setQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState({ title: '', description: '' });
@@ -48,7 +51,7 @@ const QuestionSection = () => {
     const fetchQuestions = async () => {
       if (!token || !userId) return;
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/questions`, {
+        const response = await fetch(`${API_BASE_URL}/api/questions`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -89,7 +92,7 @@ const QuestionSection = () => {
     const payload = { title: trimmedTitle, description: trimmedDescription, name, images: [] };
     console.log('POST /api/questions payload:', payload);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/questions`, {
+      const response = await fetch(`${API_BASE_URL}/api/questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +134,7 @@ const QuestionSection = () => {
     const payload = { title: trimmedTitle, description: trimmedDescription, name, images: [] };
     console.log('PUT /api/questions payload:', payload);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/questions/${questionId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/questions/${questionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +159,7 @@ const QuestionSection = () => {
 
   const handleDeleteQuestion = async (questionId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/questions/${questionId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/questions/${questionId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -192,7 +195,7 @@ const QuestionSection = () => {
     const payload = { text: answerText, name, images: [] };
     console.log('POST /api/questions/answers payload:', payload);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/questions/${questionId}/answers`, {
+      const response = await fetch(`${API_BASE_URL}/api/questions/${questionId}/answers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,7 +236,7 @@ const QuestionSection = () => {
     const payload = { text: trimmedText, name, images: [] };
     console.log('PUT /api/questions/answers payload:', payload);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/questions/${questionId}/answers/${answerId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/questions/${questionId}/answers/${answerId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -258,7 +261,7 @@ const QuestionSection = () => {
 
   const handleDeleteAnswer = async (questionId, answerId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/questions/${questionId}/answers/${answerId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/questions/${questionId}/answers/${answerId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -585,7 +588,6 @@ const QuestionSection = () => {
                             borderRadius: '12px',
                             padding: '10px 24px',
                             fontWeight: 'bold',
-                            '&:hover': { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' },
                           }}
                         >
                           Save Changes
@@ -598,7 +600,6 @@ const QuestionSection = () => {
                             borderRadius: '12px',
                             padding: '10px 24px',
                             fontWeight: 'bold',
-                            '&:hover': { background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)' },
                           }}
                         >
                           Cancel
@@ -682,7 +683,6 @@ const QuestionSection = () => {
                           }}
                           className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 rounded-xl transition-colors"
                           whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
                         >
                           <Edit3 className="w-4 h-4 text-purple-400" />
                           <span className="text-purple-400 font-medium">Edit Question</span>
@@ -694,7 +694,6 @@ const QuestionSection = () => {
                           }}
                           className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-xl transition-colors"
                           whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
                         >
                           <Trash2 className="w-4 h-4 text-red-400" />
                           <span className="text-red-400 font-medium">Delete</span>
@@ -922,7 +921,6 @@ const QuestionSection = () => {
                             },
                             '& .MuiInputBase-input::placeholder': {
                               color: 'rgba(255, 255, 255, 0.4)',
-                              opacity: 1,
                             },
                           }}
                         />

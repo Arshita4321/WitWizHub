@@ -7,6 +7,9 @@ import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 
+// Use environment variable (VITE_API_URL) with localhost fallback
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
 
@@ -51,7 +54,7 @@ const Chatbot = () => {
 
     try {
       console.log('Fetching chat history...');
-      const res = await axios.get('http://localhost:3000/api/chatbot/history', {
+      const res = await axios.get(`${API_BASE_URL}/api/chatbot/history`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('Chat history response:', res.data);
@@ -75,12 +78,12 @@ const Chatbot = () => {
 
     try {
       console.log('Fetching messages for chatId:', chatId);
-      const res = await axios.get(`http://localhost:3000/api/chatbot/history/${chatId}`, {
+      const res = await axios.get(`${API_BASE_URL}/api/chatbot/history/${chatId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('Fetched messages:', res.data);
       setMessages(res.data.map(msg => ({
-        _id: msg._id, // Ensure _id is included
+        _id: msg._id,
         sender: msg.sender,
         text: msg.text,
         videoLink: msg.videoLink,
@@ -162,7 +165,7 @@ const Chatbot = () => {
 
     try {
       const res = await axios.post(
-        'http://localhost:3000/api/chatbot/ask',
+        `${API_BASE_URL}/api/chatbot/ask`,
         { question: input, chatId: currentChatId, title: currentChatTitle, saveHistory },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -220,7 +223,7 @@ const Chatbot = () => {
 
     try {
       console.log('Attempting to delete message with ID:', messageId);
-      await axios.delete(`http://localhost:3000/api/chatbot/history/${messageId}`, {
+      await axios.delete(`${API_BASE_URL}/api/chatbot/history/${messageId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessages(prev => prev.filter((_, i) => i !== index));
@@ -231,7 +234,6 @@ const Chatbot = () => {
         message: err.message,
         response: err.response?.data,
         status: err.response?.status,
-        headers: err.response?.headers,
       });
       toast.error(`Failed to delete message: ${err.response?.data?.error || err.message}`, { duration: 4000 });
     }
@@ -247,7 +249,7 @@ const Chatbot = () => {
 
     try {
       console.log('Clearing chat history');
-      await axios.delete('http://localhost:3000/api/chatbot/history', {
+      await axios.delete(`${API_BASE_URL}/api/chatbot/history`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessages([]);
@@ -273,7 +275,7 @@ const Chatbot = () => {
 
     try {
       console.log('Deleting chat with ID:', chatId);
-      await axios.delete(`http://localhost:3000/api/chatbot/history/chat/${chatId}`, {
+      await axios.delete(`${API_BASE_URL}/api/chatbot/history/chat/${chatId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setChatHistory(prev => prev.filter(chat => chat.chatId !== chatId));

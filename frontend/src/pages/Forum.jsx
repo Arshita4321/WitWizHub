@@ -4,6 +4,13 @@ import ChatSection from '../components/ChatSection';
 import QuestionSection from '../components/QuestionSection';
 import { MessageCircle, HelpCircle, Sparkles, Users, TrendingUp, Zap, Star } from 'lucide-react';
 
+// Define API base URL using environment variable (same pattern as Login/Chatbot/ContactUs)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// You can optionally pass API_BASE_URL down to children if needed in the future:
+// <ChatSection apiBaseUrl={API_BASE_URL} />
+// <QuestionSection apiBaseUrl={API_BASE_URL} />
+
 const Forum = () => {
   const [activeTab, setActiveTab] = useState('chat');
 

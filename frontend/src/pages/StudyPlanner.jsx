@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Container, Paper, Typography, CircularProgress, Alert, Button } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { AddCircle, DoneAll } from '@mui/icons-material';
 import toast, { Toaster } from 'react-hot-toast';
+import axios from 'axios';
 
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import StudyPlanForm from '../components/StudyPlanForm';
 import StudyPlanList from '../components/StudyPlanList';
+
+// Use environment variable (same pattern as your other components)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const StudyPlanner = () => {
   const [plans, setPlans] = useState([]);
@@ -29,7 +32,7 @@ const StudyPlanner = () => {
       }
 
       setLoading(true);
-      const res = await axios.get('http://localhost:3000/api/study-planner/plans', {
+      const res = await axios.get(`${API_BASE_URL}/api/study-planner/plans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPlans(res.data);

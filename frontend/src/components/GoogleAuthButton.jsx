@@ -5,6 +5,9 @@ import { Button } from '@mui/material';
 import { Event } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 
+// Consistent API base URL (same as Login, Signup, Profile, Notes, StudyPlanner, etc.)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const GoogleAuthButton = () => {
   const handleGoogleAuth = async () => {
     try {
@@ -13,7 +16,7 @@ const GoogleAuthButton = () => {
         toast.error('Please login first', { style: { background: '#EF4444', color: '#fff' } });
         return;
       }
-      const res = await axios.get('http://localhost:3000/api/study-planner/google', {
+      const res = await axios.get(`${API_BASE_URL}/api/study-planner/google`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       window.location.href = res.data.url;

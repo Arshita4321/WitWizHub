@@ -7,6 +7,9 @@ import { motion } from 'framer-motion';
 import { TextField, Button } from '@mui/material';
 import { NavLink } from 'react-router-dom';
 
+// Use environment variable (same as your other components)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 function Signup() {
   const [signupInfo, setSignupInfo] = useState({
     name: '',
@@ -39,7 +42,7 @@ function Signup() {
     }
   
     try {
-      const response = await fetch('http://localhost:3000/auth/signup', {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

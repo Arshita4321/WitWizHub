@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 import { Card, CardContent, Typography, Chip, IconButton } from '@mui/material';
 import { Delete, Edit } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 import TopicScheduleModal from './TopicScheduleModal';
 import EditPlanDialog from './EditPlanDialog';
 import Box from '@mui/material/Box';
+
+// Consistent API base URL (same pattern as Login, Signup, Profile, Notes, StudyPlanner, etc.)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const StudyPlanList = ({ plans, setPlans, onPlanUpdated, onPlanDeleted }) => {
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -22,7 +25,7 @@ const StudyPlanList = ({ plans, setPlans, onPlanUpdated, onPlanDeleted }) => {
       if (!plan) throw new Error('Plan not found');
 
       // Delete the plan (backend will handle Google Calendar events)
-      await axios.delete(`http://localhost:3000/api/study-planner/plans/${planId}`, {
+      await axios.delete(`${API_BASE_URL}/api/study-planner/plans/${planId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -40,7 +43,7 @@ const StudyPlanList = ({ plans, setPlans, onPlanUpdated, onPlanDeleted }) => {
       try {
         const token = localStorage.getItem('jwtToken');
         const res = await axios.put(
-          `http://localhost:3000/api/study-planner/plans/${plan._id}`,
+          `${API_BASE_URL}/api/study-planner/plans/${plan._id}`,
           { fieldOfStudy: newName },
           { headers: { Authorization: `Bearer ${token}` } }
         );
