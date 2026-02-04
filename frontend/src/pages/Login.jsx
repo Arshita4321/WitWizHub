@@ -3,10 +3,12 @@ import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { motion } from 'framer-motion';
 import { TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
 import { handleError, handleSuccess } from "../utils";
+import { API_BASE_URL } from "../config/api.js";
+
 
 // Use environment variable for API base URL
-// Falls back to localhost during local development if .env is missing
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// // Falls back to localhost during local development if .env is missing
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function Login() {
   const [loginInfo, setLoginInfo] = useState({
