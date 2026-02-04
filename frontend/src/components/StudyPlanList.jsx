@@ -8,8 +8,7 @@ import TopicScheduleModal from './TopicScheduleModal';
 import EditPlanDialog from './EditPlanDialog';
 import Box from '@mui/material/Box';
 
-// Consistent API base URL (same pattern as Login, Signup, Profile, Notes, StudyPlanner, etc.)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from "../config/api.js";
 
 const StudyPlanList = ({ plans, setPlans, onPlanUpdated, onPlanDeleted }) => {
   const [selectedPlan, setSelectedPlan] = useState(null);

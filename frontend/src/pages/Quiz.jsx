@@ -5,9 +5,9 @@ import QuizPage from '../components/QuizPage';
 import QuizResults from '../components/QuizResults';
 import { getQuizQuestions, submitQuiz } from '../api/quizApi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from "../config/api.js";
 
 // Use environment variable (same pattern as Login, Chatbot, Profile, Notes, etc.)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const Quiz = () => {
   const [questions, setQuestions] = useState(null);

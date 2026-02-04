@@ -18,8 +18,7 @@ import {
 } from 'lucide-react';
 import '../styles/QuestionSection.css';
 
-// Consistent API base URL (same pattern as all other components)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from "../config/api.js";
 
 const QuestionSection = () => {
   const [questions, setQuestions] = useState([]);

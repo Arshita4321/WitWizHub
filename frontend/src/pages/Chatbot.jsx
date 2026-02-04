@@ -6,9 +6,10 @@ import { AiOutlineUser } from 'react-icons/ai';
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { API_BASE_URL } from "../config/api.js";
 
 // Use environment variable (VITE_API_URL) with localhost fallback
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };

@@ -6,9 +6,9 @@ import io from 'socket.io-client';
 import GameRoom from '../components/GameRoom';
 import Watermark from '../components/Watermark';
 import { FaGamepad } from 'react-icons/fa';
+import { API_BASE_URL } from "../config/api.js";
 
 // Use environment variable (same as your other components)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 let socket = null;
 

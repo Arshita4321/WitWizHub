@@ -3,8 +3,7 @@ import React, { useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
-// Consistent API base URL (same pattern as Login, Signup, Profile, Notes, StudyPlanner, etc.)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from "../config/api.js";
 
 const Reminders = () => {
   useEffect(() => {

@@ -5,8 +5,7 @@ import { Button } from '@mui/material';
 import { Event } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 
-// Consistent API base URL (same as Login, Signup, Profile, Notes, StudyPlanner, etc.)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from "../config/api.js";
 
 const GoogleAuthButton = () => {
   const handleGoogleAuth = async () => {

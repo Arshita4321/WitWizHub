@@ -6,9 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { motion } from 'framer-motion';
 import { TextField, Button } from '@mui/material';
 import { NavLink } from 'react-router-dom';
+import { API_BASE_URL } from "../config/api.js";
 
 // Use environment variable (same as your other components)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function Signup() {
   const [signupInfo, setSignupInfo] = useState({

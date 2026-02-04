@@ -11,7 +11,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import AdUnitsIcon from '@mui/icons-material/AdUnits';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from "../config/api.js";
 
 const PremiumPage = () => {
   const [loading, setLoading] = useState(false);

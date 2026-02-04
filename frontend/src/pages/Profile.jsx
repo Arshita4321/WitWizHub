@@ -5,9 +5,9 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { FaPlus, FaGraduationCap, FaCalendarAlt, FaTrophy, FaStar, FaBookOpen, FaChartLine } from 'react-icons/fa';
 import '../styles/profile.css';
+import { API_BASE_URL } from "../config/api.js";
 
 // Use environment variable (same pattern as your other components)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Generate floating particle positions
 const generateParticlePositions = () => {

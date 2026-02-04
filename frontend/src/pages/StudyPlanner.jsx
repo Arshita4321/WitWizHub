@@ -9,9 +9,9 @@ import axios from 'axios';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import StudyPlanForm from '../components/StudyPlanForm';
 import StudyPlanList from '../components/StudyPlanList';
+import { API_BASE_URL } from "../config/api.js";
 
 // Use environment variable (same pattern as your other components)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const StudyPlanner = () => {
   const [plans, setPlans] = useState([]);

@@ -5,8 +5,7 @@ import { Box, Typography, IconButton, LinearProgress, Button } from '@mui/materi
 import { Close, AccessTime, CheckCircle, EventAvailable, Assignment, Add, Edit, Delete } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 
-// Consistent API base URL (same pattern as Login, Signup, Profile, Notes, StudyPlanner, etc.)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from "../config/api.js";
 
 const TopicScheduleModal = ({ plan, onClose, onUpdatePlan }) => {
   const [localPlan, setLocalPlan] = useState(plan);

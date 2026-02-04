@@ -5,9 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { handleError, handleSuccess } from '../utils';
 import { Send, Edit3, Trash2, Reply, MessageSquare, Clock, User, Sparkles } from 'lucide-react';
 import '../styles/ChatSection.css';
-
-// Consistent API base URL (same as Login, Signup, Profile, Notes, etc.)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from "../config/api.js";
 
 const ChatSection = () => {
   const [messages, setMessages] = useState([]);
