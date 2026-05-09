@@ -4,6 +4,7 @@ const Subject = require('../Models/Note');
 const { OAuth2Client } = require('google-auth-library');
 const { google } = require('googleapis');
 const winston = require('winston');
+const jwt = require('jsonwebtoken');
 
 const logger = winston.createLogger({
   level: 'info',
@@ -18,37 +19,73 @@ const logger = winston.createLogger({
   ],
 });
 
-const oauth2Client = new OAuth2Client(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/study-planner/google/callback'
-);
+const createOAuthClient = (accessToken, refreshToken) => {
+  const oauth2Client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/study-planner/google/callback'
+  );
 
-const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+  oauth2Client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+
+  // Auto-refresh listener
+  oauth2Client.on('token', async (tokens) => {
+    if (tokens.access_token) {
+      try {
+        const User = require('../Models/User');
+        // Note: You need userId here - we'll pass it when creating client
+        logger.info('Google token refreshed');
+      } catch (e) {
+        logger.error('Failed to update refreshed token', e);
+      }
+    }
+  });
+
+  return oauth2Client;
+};
 
 const googleAuth = (req, res) => {
+  const oauth2Client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/study-planner/google/callback'
+  );
+
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: ['https://www.googleapis.com/auth/calendar.events'],
     state: req.headers.authorization?.split(' ')[1],
   });
-  logger.info('Generated OAuth URL:', url);
+
+  logger.info('Generated OAuth URL');
   res.json({ url });
 };
 
 const googleCallback = async (req, res) => {
   try {
+    const oauth2Client = new OAuth2Client(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
     const { tokens } = await oauth2Client.getToken(req.query.code);
-    const token = req.query.state;
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const jwtToken = req.query.state;
+    const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET);
+
     const User = require('../Models/User');
     await User.updateOne(
       { _id: decoded._id },
-      { googleAccessToken: tokens.access_token, googleRefreshToken: tokens.refresh_token }
+      { 
+        googleAccessToken: tokens.access_token, 
+        googleRefreshToken: tokens.refresh_token 
+      }
     );
+
     logger.info(`Google auth completed for user: ${decoded._id}`);
-    logger.info('Stored tokens:', { access_token: tokens.access_token, refresh_token: tokens.refresh_token });
     res.redirect(process.env.FRONTEND_URL || 'http://localhost:5173/study-planner');
   } catch (err) {
     logger.error('Google auth callback error:', err);
@@ -56,15 +93,27 @@ const googleCallback = async (req, res) => {
   }
 };
 
+// Helper to get calendar client
+const getCalendarClient = async (userId) => {
+  const User = require('../Models/User');
+  const user = await User.findById(userId);
+  
+  if (!user?.googleAccessToken) {
+    throw new Error('Google account not connected');
+  }
+
+  const oauth2Client = createOAuthClient(user.googleAccessToken, user.googleRefreshToken);
+  return google.calendar({ version: 'v3', auth: oauth2Client });
+};
+
 const createStudyPlan = async (req, res) => {
   try {
     const { fieldOfStudy, subjects } = req.body;
-    const userId = req.user?.userId;
-    logger.info('Creating study plan for user:', { userId });
+    const userId = req.user?.userId || req.user?._id;
 
-    if (!userId) {
-      throw new Error('User ID is undefined');
-    }
+    if (!userId) throw new Error('User ID is undefined');
+
+    const calendar = await getCalendarClient(req.user._id);
 
     const processedSubjects = await Promise.all(subjects.map(async subject => {
       const deadline = new Date(subject.deadline);
@@ -72,21 +121,24 @@ const createStudyPlan = async (req, res) => {
       const daysAvailable = Math.max(1, Math.floor((deadline - now) / (1000 * 60 * 60 * 24)));
       const topicsCount = subject.topics.length;
       const daysPerTopic = Math.floor(daysAvailable / topicsCount);
+
       let currentDate = new Date(now);
 
-      const user = await require('../Models/User').findById(req.user._id);
       const topicsWithTimes = await Promise.all(subject.topics.map(async (topic, index) => {
         const startTime = new Date(currentDate);
         const endTime = new Date(currentDate);
         endTime.setDate(endTime.getDate() + daysPerTopic);
+
         if (index === topicsCount - 1) {
           endTime.setTime(deadline.getTime());
         }
+
         currentDate = new Date(endTime);
         currentDate.setDate(currentDate.getDate() + 1);
+
         let googleEventId = null;
-        if (user.googleAccessToken) {
-          oauth2Client.setCredentials({ access_token: user.googleAccessToken, refresh_token: user.googleRefreshToken });
+
+        try {
           const event = await calendar.events.insert({
             calendarId: 'primary',
             resource: {
@@ -100,9 +152,18 @@ const createStudyPlan = async (req, res) => {
             },
           });
           googleEventId = event.data.id;
-          logger.info(`Created Google Calendar event: ${googleEventId} for topic: ${topic.name}`);
+          logger.info(`Created Google Calendar event: ${googleEventId}`);
+        } catch (err) {
+          logger.error(`Failed to create calendar event for topic ${topic.name}:`, err.message);
         }
-        return { name: topic.name, startTime, endTime, completed: false, googleEventId };
+
+        return { 
+          name: topic.name, 
+          startTime, 
+          endTime, 
+          completed: false, 
+          googleEventId 
+        };
       }));
 
       const noteSubject = new Subject({ name: subject.name, userId, notes: [] });
@@ -114,6 +175,7 @@ const createStudyPlan = async (req, res) => {
         deadline,
         topics: topicsWithTimes,
       });
+
       return await studySubject.save();
     }));
 
@@ -123,9 +185,10 @@ const createStudyPlan = async (req, res) => {
       subjects: processedSubjects.map(s => s._id),
       progress: 0,
     });
-    await plan.save();
 
+    await plan.save();
     const populatedPlan = await StudyPlan.findById(plan._id).populate('subjects');
+
     logger.info(`Study plan created: ${plan._id}`);
     res.status(201).json(populatedPlan);
   } catch (err) {

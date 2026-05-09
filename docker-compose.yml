@@ -1,0 +1,23 @@
+version: '3.8'
+
+
+services:
+  backend:
+    build: ./backend
+    container_name: witwizhub-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
+
+
+  frontend:
+    build: ./frontend
+    container_name: witwizhub-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped

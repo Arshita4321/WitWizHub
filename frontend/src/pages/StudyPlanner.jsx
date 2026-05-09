@@ -11,8 +11,6 @@ import StudyPlanForm from '../components/StudyPlanForm';
 import StudyPlanList from '../components/StudyPlanList';
 import { API_BASE_URL } from "../config/api.js";
 
-// Use environment variable (same pattern as your other components)
-
 const StudyPlanner = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +21,20 @@ const StudyPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Success message after Google OAuth redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success')) {
+      toast.success('Google Calendar Connected Successfully!', {
+        icon: '🎉',
+        duration: 4000,
+      });
+      // Clean the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  // Improved fetchPlans
   const fetchPlans = useCallback(async () => {
     try {
       const token = localStorage.getItem('jwtToken');
@@ -35,17 +47,19 @@ const StudyPlanner = () => {
       const res = await axios.get(`${API_BASE_URL}/api/study-planner/plans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setPlans(res.data);
-      setLoading(false);
-      showReminders(res.data);
+      showReminders(res.data);        // Keep your original reminder logic
     } catch (err) {
-      setError('Failed to load study plans. Please try again.');
-      setLoading(false);
+      console.error('Fetch plans error:', err);
       if (err.response?.status === 401) {
         localStorage.clear();
         navigate('/login', { state: { from: location.pathname } });
+      } else {
+        setError('Failed to load study plans. Please try again.');
       }
-      console.error('Fetch plans error:', err);
+    } finally {
+      setLoading(false);
     }
   }, [navigate, location]);
 
@@ -77,10 +91,15 @@ const StudyPlanner = () => {
     plansArray.forEach((plan) => {
       plan.subjects.forEach((subject) => {
         subject.topics.forEach((topic) => {
-          const deadline = new Date(topic.deadline);
+          const deadline = new Date(topic.endTime || topic.deadline); // Use endTime if available
           const diffDays = (deadline - now) / (1000 * 60 * 60 * 24);
           if (diffDays >= 0 && diffDays <= 3) {
-            upcomingTopics.push({ plan: plan.fieldOfStudy, subject: subject.name, topic: topic.name, deadline });
+            upcomingTopics.push({ 
+              plan: plan.fieldOfStudy, 
+              subject: subject.name, 
+              topic: topic.name, 
+              deadline 
+            });
           }
         });
       });

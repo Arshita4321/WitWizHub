@@ -23,7 +23,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ['http://localhost:5173', 'https://hoppscotch.io', 'http://localhost:3001','https://wit-wiz-hub.vercel.app'
+    origin: ['http://localhost:5173', 'https://hoppscotch.io', 'http://localhost:5000','https://wit-wiz-hub.vercel.app'
   ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Authorization', 'Content-Type'],
@@ -143,7 +143,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, '0.0.0.0', () => {
   logger.info(`Server is running at ${PORT}`);
 });
