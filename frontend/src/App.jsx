@@ -6,7 +6,7 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Public Pages
+
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ResetPassword from './components/ResetPassword';
