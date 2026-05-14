@@ -2,40 +2,51 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USERNAME = "arshi5583"
+        DOCKERHUB = credentials('dockerhub-creds')
+
+        BACKEND_IMAGE  = "${DOCKERHUB_USR}/witwizhub-backend"
+        FRONTEND_IMAGE = "${DOCKERHUB_USR}/witwizhub-frontend"
     }
 
     stages {
 
-        stage('Pull Images') {
+        stage('Update Backend Image') {
             steps {
                 sh """
-                docker pull $DOCKER_USERNAME/witwizhub-backend:latest
-                docker pull $DOCKER_USERNAME/witwizhub-frontend:latest
+                    kubectl set image deployment/witwizhub-backend \
+                    backend=${BACKEND_IMAGE}:latest \
+                    --record
                 """
             }
         }
 
-        stage('Stop Old Containers') {
+        stage('Update Frontend Image') {
             steps {
                 sh """
-                docker stop backend || true
-                docker rm backend || true
-
-                docker stop frontend || true
-                docker rm frontend || true
+                    kubectl set image deployment/witwizhub-frontend \
+                    frontend=${FRONTEND_IMAGE}:latest \
+                    --record
                 """
             }
         }
 
-        stage('Run Containers') {
+        stage('Verify Rollout') {
             steps {
-                sh """
-                docker run -d -p 5000:5000 --name backend $DOCKER_USERNAME/witwizhub-backend:latest
-
-                docker run -d -p 5173:5173 --name frontend $DOCKER_USERNAME/witwizhub-frontend:latest
-                """
+                sh 'kubectl rollout status deployment/witwizhub-backend'
+                sh 'kubectl rollout status deployment/witwizhub-frontend'
             }
+        }
+    }
+
+    post {
+        failure {
+            sh 'kubectl rollout undo deployment/witwizhub-backend'
+            sh 'kubectl rollout undo deployment/witwizhub-frontend'
+            echo "Rollout failed — rolled back automatically"
+        }
+
+        success {
+            echo "Deployment successful — Build ${BUILD_NUMBER}"
         }
     }
 }

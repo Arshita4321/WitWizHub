@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: witwizhub-backend
+  labels:
+    app: witwizhub-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: witwizhub-backend
+  template:
+    metadata:
+      labels:
+        app: witwizhub-backend
+    spec:
+      containers:
+        - name: backend
+          image: arshi5583/witwizhub-backend:latest
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          envFrom:
+            - secretRef:
+                name: backend-secret

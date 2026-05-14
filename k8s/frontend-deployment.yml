@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: witwizhub-frontend
+  labels:
+    app: witwizhub-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: witwizhub-frontend
+  template:
+    metadata:
+      labels:
+        app: witwizhub-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: arshi5583/witwizhub-frontend:latest
+          ports:
+            - containerPort: 5173
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
