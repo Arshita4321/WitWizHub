@@ -24,8 +24,8 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/witwizhub-backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/witwizhub-backend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/witwizhub-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/witwizhub-backend:${{ github.sha }}
 
       - name: Build and push frontend
         uses: docker/build-push-action@v5
@@ -33,8 +33,8 @@ jobs:
           context: ./frontend
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/witwizhub-frontend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/witwizhub-frontend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/witwizhub-frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/witwizhub-frontend:${{ github.sha }}
 
       - name: Trigger Jenkins
         run: |
