@@ -51,7 +51,7 @@ metadata:
 spec:
   selector:
     app: witwizhub-jenkins
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - name: web
       port: 8080

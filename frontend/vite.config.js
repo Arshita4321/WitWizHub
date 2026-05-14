@@ -9,16 +9,8 @@ export default defineConfig({
       content: ['./src/**/*.{js,jsx,ts,tsx}'],
     }),
   ],
-
-  server: {
-    host: true,        // OR "0.0.0.0"
-    port: 5173,
-    strictPort: true,
-  },
-
   build: {
-    outDir: 'dist',
+    outDir: 'dist', // 👈 This tells Vercel where to find your built files
   },
-
-  base: '/',
+  base: '/', // 👈 Ensures all routes resolve correctly after refreshing
 });
