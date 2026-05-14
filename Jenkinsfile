@@ -32,7 +32,8 @@ pipeline {
             steps {
                 sh """
                 docker run -d -p 5000:5000 --name backend $DOCKER_USERNAME/witwizhub-backend:latest
-                docker run -d -p 3000:3000 --name frontend $DOCKER_USERNAME/witwizhub-frontend:latest
+
+                docker run -d -p 5173:5173 --name frontend $DOCKER_USERNAME/witwizhub-frontend:latest
                 """
             }
         }

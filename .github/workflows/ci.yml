@@ -42,3 +42,7 @@ jobs:
 
           docker push ${{ secrets.DOCKER_USERNAME }}/witwizhub-backend:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/witwizhub-frontend:latest
+      
+      - name: Trigger Jenkins Deployment
+        run: |
+          curl "http://localhost:8080/job/witwizhub-deploy/build?token=witwizhubdeploy123"
