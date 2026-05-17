@@ -2,51 +2,58 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB = credentials('dockerhub-creds')
-
-        BACKEND_IMAGE  = "${DOCKERHUB_USR}/witwizhub-backend"
-        FRONTEND_IMAGE = "${DOCKERHUB_USR}/witwizhub-frontend"
+        DOCKER_HUB = "your-dockerhub-username"
+        BACKEND_IMAGE = "${DOCKER_HUB}/witwizhub-backend"
+        FRONTEND_IMAGE = "${DOCKER_HUB}/witwizhub-frontend"
     }
 
     stages {
 
-        stage('Update Backend Image') {
+        stage('Checkout Code') {
             steps {
-                sh """
-                    kubectl set image deployment/witwizhub-backend \
-                    backend=${BACKEND_IMAGE}:latest \
-                    --record
-                """
+                checkout scm
             }
         }
 
-        stage('Update Frontend Image') {
+        stage('Build Backend Image') {
             steps {
-                sh """
-                    kubectl set image deployment/witwizhub-frontend \
-                    frontend=${FRONTEND_IMAGE}:latest \
-                    --record
-                """
+                dir('backend') {
+                    bat "docker build -t %BACKEND_IMAGE%:latest ."
+                }
             }
         }
 
-        stage('Verify Rollout') {
+        stage('Build Frontend Image') {
             steps {
-                sh 'kubectl rollout status deployment/witwizhub-backend'
-                sh 'kubectl rollout status deployment/witwizhub-frontend'
+                dir('frontend') {
+                    bat "docker build -t %FRONTEND_IMAGE%:latest ."
+                }
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    bat "echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin"
+                }
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                bat "docker push %BACKEND_IMAGE%:latest"
+                bat "docker push %FRONTEND_IMAGE%:latest"
             }
         }
     }
 
     post {
-        failure {
-            sh 'kubectl rollout undo deployment/witwizhub-backend'
-            sh 'kubectl rollout undo deployment/witwizhub-frontend'
-            echo "Rollout failed — rolled back automatically"
-        }
-
-        success {
-            echo "Deployment successful — Build ${BUILD_NUMBER}"
+        always {
+            bat "docker logout"
         }
     }
 }
