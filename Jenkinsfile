@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB = "your-dockerhub-username"
+        DOCKER_HUB = "arshi5583"
         BACKEND_IMAGE = "${DOCKER_HUB}/witwizhub-backend"
         FRONTEND_IMAGE = "${DOCKER_HUB}/witwizhub-frontend"
     }
