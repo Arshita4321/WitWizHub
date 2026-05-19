@@ -137,7 +137,7 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
-// General error handler
+// General error handle
 app.use((err, req, res, next) => {
   logger.error('Server error:', { error: err.message, stack: err.stack });
   res.status(500).json({ success: false, message: 'Internal server error' });
