@@ -102,7 +102,7 @@ app.get('/ding', (req, res) => {
   res.send('Dong');
 });
 app.get('/', (req, res) => {
-  res.send('✅ WitWizHub Backend is running successfully!');
+  res.send('WitWizHub Backend is running successfully!');
 });
 
 app.use('/auth', AuthRouter);
