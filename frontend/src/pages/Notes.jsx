@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DESIGN_TOKENS } from '../styles/designTokens';
+
+const T = DESIGN_TOKENS.colors;
+const typography = DESIGN_TOKENS.typography;
+const spacing = DESIGN_TOKENS.spacing;
+const borderRadius = DESIGN_TOKENS.borderRadius;
+const shadows = DESIGN_TOKENS.shadows;
 
 const Notes = () => {
   const [subjects, setSubjects] = useState([
@@ -30,6 +37,19 @@ const Notes = () => {
     violet:  { hex: '#A78BFA', label: 'Violet'   },
     slate:   { hex: '#94A3B8', label: 'Slate'    },
   };
+
+  const cardBorderColors = [
+    { hex: '#F472B6', glow: 'rgba(244, 114, 182, 0.4)' },  // Pink
+    { hex: '#A78BFA', glow: 'rgba(167, 139, 250, 0.4)' },  // Purple
+    { hex: '#60A5FA', glow: 'rgba(96, 165, 250, 0.4)' },  // Blue
+    { hex: '#34D399', glow: 'rgba(52, 211, 153, 0.4)' },  // Emerald
+    { hex: '#FBBF24', glow: 'rgba(251, 191, 36, 0.4)' },  // Amber
+    { hex: '#FB7185', glow: 'rgba(251, 113, 133, 0.4)' },  // Rose
+    { hex: '#22D3EE', glow: 'rgba(34, 211, 238, 0.4)' },  // Cyan
+    { hex: '#F87171', glow: 'rgba(248, 113, 113, 0.4)' },  // Red
+  ];
+
+  const getCardColor = (index) => cardBorderColors[index % cardBorderColors.length];
 
   const handleAddSubject = (e) => {
     e.preventDefault();
@@ -80,27 +100,27 @@ const Notes = () => {
   };
 
   const C = {
-    bg:       '#1C1A35',
-    surface:  '#242240',
-    raised:   '#2C2A52',
-    border:   '#38365E',
-    borderHi: '#5856A0',
-    text:     '#EEEDF8',
-    muted:    '#7E7CA8',
-    faint:    '#3E3C68',
-    accent:   '#8B87FF',
-    accentHi: '#A8A5FF',
+    bg:       T.bg,
+    surface:  T.surface,
+    raised:   T.card,
+    border:   T.border,
+    borderHi: T.borderHi,
+    text:     T.text,
+    muted:    T.textMuted,
+    faint:    T.textDim,
+    accent:   T.accent,
+    accentHi: T.accentLt,
     accentFg: '#FFFFFF',
-    danger:   '#F87171',
-    dangerBg: '#2D1F42',
+    danger:   T.danger,
+    dangerBg: T.danger + '20',
   };
 
   const styles = {
     page: {
       minHeight: '100vh',
-      background: C.bg,
+      background: 'linear-gradient(135deg, ' + C.bg + ' 0%, #1a1f3c 50%, ' + C.bg + ' 100%)',
       color: C.text,
-      fontFamily: '"Inter", system-ui, sans-serif',
+      fontFamily: typography.fontFamily.sans,
       position: 'relative',
     },
     grain: {
@@ -109,51 +129,65 @@ const Notes = () => {
       backgroundSize: '256px 256px', opacity: 0.5,
     },
     inner: { position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', padding: '60px 32px 80px' },
-    header: { marginBottom: '64px' },
-    wordmark: { fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: C.muted, fontFamily: '"JetBrains Mono", monospace', marginBottom: '32px' },
-    title: { fontSize: 'clamp(40px, 7vw, 72px)', fontWeight: 700, lineHeight: 1.05, color: C.text, letterSpacing: '-0.03em', marginBottom: '12px' },
-    titleAccent: { color: C.accent },
-    subtitle: { fontSize: '16px', color: C.muted, fontFamily: '"JetBrains Mono", monospace' },
-    divider: { width: '40px', height: '1px', background: C.border, margin: '32px 0' },
+    header: { marginBottom: spacing[12] },
+    wordmark: { fontSize: typography.fontSize.xs, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.muted, fontFamily: typography.fontFamily.mono, marginBottom: spacing[8] },
+    title: { fontSize: 'clamp(40px, 7vw, 72px)', fontWeight: typography.fontWeight.bold, lineHeight: typography.lineHeight.tight, color: C.text, letterSpacing: '-0.03em', marginBottom: spacing[3] },
+    titleAccent: { 
+      background: 'linear-gradient(135deg, #F472B6 0%, #A78BFA 25%, #60A5FA 50%, #34D399 75%, #FBBF24 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+    },
+    subtitle: { fontSize: typography.fontSize.base, color: C.muted, fontFamily: typography.fontFamily.mono },
+    divider: { width: '40px', height: '1px', background: C.border, margin: spacing[8] + ' 0' },
 
     formWrap: { marginBottom: '56px' },
     formRow: { display: 'flex', gap: '12px', alignItems: 'stretch' },
     input: {
-      flex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px',
-      color: C.text, fontSize: '15px', padding: '14px 18px', outline: 'none',
-      fontFamily: '"Inter", system-ui, sans-serif', transition: 'border-color 0.15s',
+      flex: 1, background: 'linear-gradient(135deg, ' + C.surface + ' 0%, ' + C.raised + ' 100%)', border: `2px solid ${C.border}`, borderRadius: borderRadius.lg,
+      color: C.text, fontSize: typography.fontSize.base, padding: spacing[4] + ' ' + spacing[5], outline: 'none',
+      fontFamily: typography.fontFamily.sans, transition: 'all 0.3s ease',
     },
     btnPrimary: {
-      background: C.accent, color: C.accentFg, border: 'none', borderRadius: '8px',
-      padding: '14px 24px', fontWeight: 600, fontSize: '14px', cursor: 'pointer',
-      fontFamily: '"Inter", system-ui, sans-serif', letterSpacing: '0.01em', whiteSpace: 'nowrap',
-      transition: 'background 0.15s, transform 0.1s',
+      background: 'linear-gradient(135deg, #A78BFA 0%, #60A5FA 50%, #34D399 100%)', color: C.accentFg, border: 'none', borderRadius: borderRadius.lg,
+      padding: spacing[4] + ' ' + spacing[6], fontWeight: typography.fontWeight.semibold, fontSize: typography.fontSize.sm, cursor: 'pointer',
+      fontFamily: typography.fontFamily.sans, letterSpacing: '0.01em', whiteSpace: 'nowrap',
+      transition: 'all 0.3s ease', boxShadow: '0 4px 15px rgba(167, 139, 250, 0.3)',
     },
     btnSecondary: {
       background: 'transparent', color: C.muted, border: `1px solid ${C.border}`,
-      borderRadius: '8px', padding: '10px 16px', fontSize: '13px', cursor: 'pointer',
-      fontFamily: '"Inter", system-ui, sans-serif', transition: 'all 0.15s',
+      borderRadius: borderRadius.lg, padding: spacing[3] + ' ' + spacing[4], fontSize: typography.fontSize.sm, cursor: 'pointer',
+      fontFamily: typography.fontFamily.sans, transition: 'all 0.2s ease',
     },
     btnDanger: {
       background: 'transparent', color: C.danger, border: `1px solid ${C.dangerBg}`,
-      borderRadius: '8px', padding: '10px 16px', fontSize: '13px', cursor: 'pointer',
-      fontFamily: '"Inter", system-ui, sans-serif', transition: 'all 0.15s',
+      borderRadius: borderRadius.lg, padding: spacing[3] + ' ' + spacing[4], fontSize: typography.fontSize.sm, cursor: 'pointer',
+      fontFamily: typography.fontFamily.sans, transition: 'all 0.2s ease',
     },
 
     grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' },
-    card: {
-      background: C.surface, border: `1px solid ${C.border}`, borderRadius: '12px',
-      padding: '24px', cursor: 'pointer', position: 'relative', overflow: 'hidden',
-      transition: 'border-color 0.2s, background 0.2s',
-    },
-    cardIndex: { fontFamily: '"JetBrains Mono", monospace', fontSize: '11px', color: C.faint, marginBottom: '16px', letterSpacing: '0.1em' },
-    cardTitle: { fontSize: '20px', fontWeight: 600, color: C.text, marginBottom: '8px', lineHeight: 1.2 },
-    cardMeta: { fontSize: '13px', color: C.muted, fontFamily: '"JetBrains Mono", monospace' },
-    cardActions: { display: 'flex', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: `1px solid ${C.border}` },
+    card: (colorIndex) => ({
+      background: 'linear-gradient(145deg, ' + C.surface + ' 0%, ' + C.raised + ' 100%)', 
+      border: `2px solid ${cardBorderColors[colorIndex % cardBorderColors.length].hex}`,
+      borderRadius: borderRadius.xl,
+      padding: spacing[6], cursor: 'pointer', position: 'relative', overflow: 'hidden',
+      transition: 'all 0.3s ease',
+      boxShadow: `0 0 20px ${cardBorderColors[colorIndex % cardBorderColors.length].glow}20`,
+    }),
+    cardIndex: (colorIndex) => ({ 
+      fontFamily: typography.fontFamily.mono, fontSize: typography.fontSize.xs, 
+      color: cardBorderColors[colorIndex % cardBorderColors.length].hex, 
+      marginBottom: spacing[4], letterSpacing: '0.1em',
+      fontWeight: typography.fontWeight.semibold,
+      textShadow: `0 0 10px ${cardBorderColors[colorIndex % cardBorderColors.length].glow}`,
+    }),
+    cardTitle: { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.semibold, color: C.text, marginBottom: spacing[2], lineHeight: typography.lineHeight.tight },
+    cardMeta: { fontSize: typography.fontSize.sm, color: C.muted, fontFamily: typography.fontFamily.mono },
+    cardActions: { display: 'flex', gap: spacing[2], marginTop: spacing[5], paddingTop: spacing[4], borderTop: `1px solid ${C.borderHi}` },
     cardBtn: {
-      background: 'transparent', color: C.muted, border: 'none', padding: '4px 8px',
-      fontSize: '12px', cursor: 'pointer', fontFamily: '"Inter", system-ui, sans-serif',
-      borderRadius: '4px', transition: 'color 0.15s', display: 'flex', alignItems: 'center', gap: '4px',
+      background: 'transparent', color: C.muted, border: 'none', padding: spacing[1] + ' ' + spacing[2],
+      fontSize: typography.fontSize.xs, cursor: 'pointer', fontFamily: typography.fontFamily.sans,
+      borderRadius: borderRadius.sm, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: spacing[1],
     },
 
     overlay: {
@@ -162,63 +196,69 @@ const Notes = () => {
       padding: '32px 24px', overflowY: 'auto',
     },
     panel: {
-      width: '100%', maxWidth: '860px', background: C.surface, border: `1px solid ${C.border}`,
-      borderRadius: '16px', overflow: 'hidden', marginTop: 'auto', marginBottom: 'auto',
+      width: '100%', maxWidth: '860px', background: 'linear-gradient(145deg, ' + C.surface + ' 0%, ' + C.raised + ' 100%)', border: `1px solid ${C.borderHi}`,
+      borderRadius: borderRadius['2xl'], overflow: 'hidden', marginTop: 'auto', marginBottom: 'auto',
+      boxShadow: shadows.xl,
     },
-    panelHeader: { padding: '28px 32px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-    panelTitle: { fontSize: '22px', fontWeight: 600, color: C.text, letterSpacing: '-0.02em' },
-    panelBody: { padding: '28px 32px' },
+    panelHeader: { padding: spacing[7] + ' ' + spacing[8] + ' ' + spacing[6], borderBottom: `1px solid ${C.borderHi}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+    panelTitle: { fontSize: typography.fontSize['2xl'], fontWeight: typography.fontWeight.semibold, color: C.text, letterSpacing: '-0.02em' },
+    panelBody: { padding: spacing[7] + ' ' + spacing[8] },
 
-    noteFormWrap: { background: C.raised, borderRadius: '10px', padding: '20px', marginBottom: '28px', border: `1px solid ${C.border}` },
+    noteFormWrap: { background: 'linear-gradient(135deg, ' + C.raised + ' 0%, ' + C.surface + ' 100%)', borderRadius: borderRadius.lg, padding: spacing[5], marginBottom: spacing[7], border: `1px solid ${C.borderHi}`, boxShadow: shadows.md },
     textarea: {
       width: '100%', background: 'transparent', border: 'none', color: C.text,
-      fontSize: '15px', padding: '0', outline: 'none', resize: 'none', lineHeight: 1.6,
-      fontFamily: '"Inter", system-ui, sans-serif', marginBottom: '16px',
+      fontSize: typography.fontSize.base, padding: '0', outline: 'none', resize: 'none', lineHeight: typography.lineHeight.relaxed,
+      fontFamily: typography.fontFamily.sans, marginBottom: spacing[4],
       boxSizing: 'border-box',
     },
-    noteToolbar: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', paddingTop: '14px', borderTop: `1px solid ${C.border}` },
+    noteToolbar: { display: 'flex', gap: spacing[3], alignItems: 'center', flexWrap: 'wrap', paddingTop: spacing[4], borderTop: `1px solid ${C.borderHi}` },
     colorDot: (color, selected) => ({
-      width: '20px', height: '20px', borderRadius: '50%', background: penColors[color].hex,
+      width: '24px', height: '24px', borderRadius: '50%', background: penColors[color].hex,
       cursor: 'pointer', border: selected ? `2px solid ${C.text}` : '2px solid transparent',
       outline: selected ? `2px solid ${penColors[color].hex}` : 'none',
-      outlineOffset: '2px', transition: 'all 0.15s', flexShrink: 0,
+      outlineOffset: '2px', transition: 'all 0.2s ease', flexShrink: 0,
+      boxShadow: selected ? `0 0 8px ${penColors[color].hex}40` : 'none',
     }),
-    thickLabel: { fontSize: '12px', color: C.muted, fontFamily: '"JetBrains Mono", monospace', marginLeft: 'auto' },
+    thickLabel: { fontSize: typography.fontSize.xs, color: C.muted, fontFamily: typography.fontFamily.mono, marginLeft: 'auto' },
     slider: { accentColor: C.accent, cursor: 'pointer', width: '100px' },
 
-    notesGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' },
+    notesGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: spacing[4] },
     noteCard: (color) => ({
-      background: C.bg, borderRadius: '10px', padding: '18px',
-      border: `1px solid ${penColors[color]?.hex || C.accent}22`,
-      borderLeft: `3px solid ${penColors[color]?.hex || C.accent}`,
+      background: 'linear-gradient(135deg, ' + C.bg + ' 0%, ' + C.surface + ' 100%)', borderRadius: borderRadius.lg, padding: spacing[5],
+      border: `2px solid ${penColors[color]?.hex || C.accent}`,
+      borderLeft: `5px solid ${penColors[color]?.hex || C.accent}`,
       position: 'relative',
+      transition: 'all 0.25s ease',
+      boxShadow: `0 0 15px ${penColors[color]?.hex || C.accent}30`,
     }),
     noteText: (color, thickness) => ({
-      fontSize: `${12 + thickness * 0.4}px`, lineHeight: 1.65,
+      fontSize: `${12 + thickness * 0.4}px`, lineHeight: typography.lineHeight.relaxed,
       color: penColors[color]?.hex || C.accent,
-      marginBottom: '14px', fontWeight: thickness > 5 ? 500 : 400,
+      marginBottom: spacing[4], fontWeight: thickness > 5 ? typography.fontWeight.medium : typography.fontWeight.normal,
     }),
-    noteActions: { display: 'flex', gap: '6px' },
+    noteActions: { display: 'flex', gap: spacing[2] },
 
     dialogOverlay: {
       position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(10,9,28,0.92)',
-      backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+      backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: spacing[6],
     },
     dialog: {
-      background: C.surface, border: `1px solid ${C.border}`, borderRadius: '14px',
-      padding: '32px', width: '100%', maxWidth: '440px',
+      background: 'linear-gradient(145deg, ' + C.surface + ' 0%, ' + C.raised + ' 100%)', border: `1px solid ${C.borderHi}`, borderRadius: borderRadius.xl,
+      padding: spacing[8], width: '100%', maxWidth: '440px',
+      boxShadow: shadows.xl,
     },
-    dialogTitle: { fontSize: '18px', fontWeight: 600, color: C.text, marginBottom: '20px', letterSpacing: '-0.01em' },
-    dialogActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' },
-    label: { fontSize: '12px', color: C.muted, fontFamily: '"JetBrains Mono", monospace', marginBottom: '8px', display: 'block', letterSpacing: '0.08em', textTransform: 'uppercase' },
+    dialogTitle: { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: C.text, marginBottom: spacing[5], letterSpacing: '-0.01em' },
+    dialogActions: { display: 'flex', gap: spacing[3], justifyContent: 'flex-end', marginTop: spacing[6] },
+    label: { fontSize: typography.fontSize.xs, color: C.muted, fontFamily: typography.fontFamily.mono, marginBottom: spacing[2], display: 'block', letterSpacing: '0.08em', textTransform: 'uppercase' },
     select: {
-      background: C.raised, border: `1px solid ${C.border}`, color: C.text,
-      borderRadius: '8px', padding: '10px 12px', fontSize: '14px', outline: 'none',
-      fontFamily: '"Inter", system-ui, sans-serif', cursor: 'pointer', width: '100%',
+      background: 'linear-gradient(135deg, ' + C.raised + ' 0%, ' + C.surface + ' 100%)', border: `1px solid ${C.border}`, color: C.text,
+      borderRadius: borderRadius.lg, padding: spacing[3] + ' ' + spacing[3], fontSize: typography.fontSize.sm, outline: 'none',
+      fontFamily: typography.fontFamily.sans, cursor: 'pointer', width: '100%',
     },
-    emptyState: { textAlign: 'center', padding: '48px 24px', color: C.faint },
-    emptyIcon: { fontSize: '32px', marginBottom: '12px' },
-    emptyText: { fontSize: '14px', fontFamily: '"JetBrains Mono", monospace' },
+    emptyState: { textAlign: 'center', padding: spacing[12] + ' ' + spacing[6], color: C.faint },
+    emptyIcon: { fontSize: '48px', marginBottom: spacing[4], opacity: 0.5 },
+    emptyText: { fontSize: typography.fontSize.sm, fontFamily: typography.fontFamily.mono, color: C.muted },
+    emptySubtext: { fontSize: typography.fontSize.xs, color: C.faint, marginTop: spacing[2] },
   };
 
   return (
@@ -247,43 +287,59 @@ const Notes = () => {
               value={newSubject}
               onChange={e => setNewSubject(e.target.value)}
               placeholder="e.g. Quantum Physics, Economics..."
-              onFocus={e => e.target.style.borderColor = '#8B87FF'}
-              onBlur={e => e.target.style.borderColor = '#38365E'}
+              onFocus={e => {
+                e.target.style.borderColor = '#A78BFA';
+                e.target.style.boxShadow = '0 0 20px rgba(167, 139, 250, 0.3)';
+              }}
+              onBlur={e => {
+                e.target.style.borderColor = '#334155';
+                e.target.style.boxShadow = 'none';
+              }}
             />
-            <button
+            <motion.button
               type="submit"
               style={styles.btnPrimary}
-              onMouseEnter={e => { e.target.style.background = '#A8A5FF'; e.target.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={e => { e.target.style.background = '#8B87FF'; e.target.style.transform = 'none'; }}
+              whileHover={{ scale: 1.05, boxShadow: '0 6px 20px rgba(167, 139, 250, 0.5)' }}
+              whileTap={{ scale: 0.98 }}
             >
               + Add Subject
-            </button>
+            </motion.button>
           </form>
         </div>
 
         {/* Subjects Grid */}
         <div style={styles.grid}>
           <AnimatePresence>
-            {subjects.map((subject, i) => (
+            {subjects.map((subject, i) => {
+              const cardColor = getCardColor(i);
+              return (
               <motion.div
                 key={subject._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.25, delay: i * 0.05 }}
-                style={styles.card}
+                style={styles.card(i)}
                 onClick={e => handleSubjectCardClick(subject, e)}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#5856A0'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#38365E'}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = cardColor.hex;
+                  e.currentTarget.style.transform = 'translateY(-6px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = `0 12px 32px ${cardColor.glow}`;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = cardColor.hex;
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = `0 0 20px ${cardColor.glow}20`;
+                }}
               >
-                <div style={styles.cardIndex}>{String(i + 1).padStart(2, '0')}</div>
+                <div style={styles.cardIndex(i)}>{String(i + 1).padStart(2, '0')}</div>
                 <div style={styles.cardTitle}>{subject.name}</div>
                 <div style={styles.cardMeta}>{subject.notes.length} note{subject.notes.length !== 1 ? 's' : ''}</div>
                 <div style={styles.cardActions}>
                   <button
                     style={styles.cardBtn}
                     onClick={e => { e.stopPropagation(); setEditSubject(subject); setOpenSubjectDialog(true); }}
-                    onMouseEnter={e => e.target.style.color = '#A8A5FF'}
+                    onMouseEnter={e => e.target.style.color = cardColor.hex}
                     onMouseLeave={e => e.target.style.color = '#7E7CA8'}
                   >
                     ↗ Edit
@@ -299,15 +355,22 @@ const Notes = () => {
                   <span style={{ ...styles.cardMeta, marginLeft: 'auto' }}>Open →</span>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </AnimatePresence>
         </div>
 
         {subjects.length === 0 && (
-          <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>◻</div>
-            <div style={styles.emptyText}>No subjects yet. Add one above.</div>
-          </div>
+          <motion.div
+            style={styles.emptyState}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div style={styles.emptyIcon}>📚</div>
+            <div style={styles.emptyText}>No subjects yet</div>
+            <div style={styles.emptySubtext}>Create your first subject to start organizing notes</div>
+          </motion.div>
         )}
       </div>
 
@@ -367,21 +430,28 @@ const Notes = () => {
                       <span style={styles.thickLabel}>weight: {newNote.penThickness}</span>
                       <input type="range" min={1} max={10} step={1} value={newNote.penThickness} style={styles.slider}
                         onChange={e => setNewNote({ ...newNote, penThickness: Number(e.target.value) })} />
-                      <button type="submit" style={{ ...styles.btnPrimary, padding: '10px 20px', fontSize: '13px', marginLeft: 'auto' }}
-                        onMouseEnter={e => e.target.style.background = '#A8A5FF'}
-                        onMouseLeave={e => e.target.style.background = '#8B87FF'}
+                      <motion.button type="submit" style={{ ...styles.btnPrimary, padding: '10px 20px', fontSize: '13px', marginLeft: 'auto' }}
+                        whileHover={{ scale: 1.02, background: '#A8A5FF' }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         + Note
-                      </button>
+                      </motion.button>
                     </div>
                   </form>
                 </div>
 
                 {/* Notes */}
                 {selectedSubject.notes.length === 0 ? (
-                  <div style={styles.emptyState}>
-                    <div style={styles.emptyText}>No notes in this subject yet.</div>
-                  </div>
+                  <motion.div
+                    style={styles.emptyState}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div style={styles.emptyIcon}>📝</div>
+                    <div style={styles.emptyText}>No notes yet</div>
+                    <div style={styles.emptySubtext}>Add your first note above</div>
+                  </motion.div>
                 ) : (
                   <div style={styles.notesGrid}>
                     <AnimatePresence>
@@ -393,6 +463,18 @@ const Notes = () => {
                           exit={{ opacity: 0, scale: 0.95 }}
                           transition={{ duration: 0.2, delay: i * 0.04 }}
                           style={styles.noteCard(note.penColor)}
+                          onMouseEnter={e => {
+                            const colorHex = penColors[note.penColor]?.hex || C.accent;
+                            e.currentTarget.style.transform = 'translateX(6px) translateY(-2px) scale(1.02)';
+                            e.currentTarget.style.boxShadow = `0 8px 24px ${colorHex}40`;
+                            e.currentTarget.style.borderColor = colorHex;
+                          }}
+                          onMouseLeave={e => {
+                            const colorHex = penColors[note.penColor]?.hex || C.accent;
+                            e.currentTarget.style.transform = 'translateX(0) translateY(0) scale(1)';
+                            e.currentTarget.style.boxShadow = `0 0 15px ${colorHex}30`;
+                            e.currentTarget.style.borderColor = colorHex;
+                          }}
                         >
                           <p style={styles.noteText(note.penColor, note.penThickness)}>{note.content}</p>
                           <div style={styles.noteActions}>

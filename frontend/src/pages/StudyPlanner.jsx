@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Container, Paper, Typography, CircularProgress, Alert, Button } from '@mui/material';
-import { AddCircle, DoneAll } from '@mui/icons-material';
+import { CircularProgress, Alert } from '@mui/material';
 import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -10,6 +9,24 @@ import GoogleAuthButton from '../components/GoogleAuthButton';
 import StudyPlanForm from '../components/StudyPlanForm';
 import StudyPlanList from '../components/StudyPlanList';
 import { API_BASE_URL } from "../config/api.js";
+
+// ── Design tokens ────────────────────────────────────────────────────────────
+const T = {
+  bg:        '#0f172a',
+  surface:   '#1e293b',
+  surfaceHi: '#263348',
+  border:    '#334155',
+  borderHi:  '#475569',
+  text:      '#f1f5f9',
+  textMuted: '#94a3b8',
+  textDim:   '#64748b',
+  accent:    '#6366f1',
+  accentLt:  '#a5b4fc',
+  accentBg:  'rgba(99,102,241,0.1)',
+  success:   '#10b981',
+  successLt: '#6ee7b7',
+  successBg: 'rgba(16,185,129,0.08)',
+};
 
 const StudyPlanner = () => {
   const [plans, setPlans] = useState([]);
@@ -21,20 +38,17 @@ const StudyPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Success message after Google OAuth redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success')) {
-      toast.success('Google Calendar Connected Successfully!', {
-        icon: '🎉',
+      toast.success('Google Calendar connected!', {
         duration: 4000,
+        style: { background: T.surface, color: T.text, border: `1px solid ${T.border}` },
       });
-      // Clean the URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
-  // Improved fetchPlans
   const fetchPlans = useCallback(async () => {
     try {
       const token = localStorage.getItem('jwtToken');
@@ -42,14 +56,12 @@ const StudyPlanner = () => {
         navigate('/login', { state: { from: location.pathname } });
         return;
       }
-
       setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/api/study-planner/plans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setPlans(res.data);
-      showReminders(res.data);        // Keep your original reminder logic
+      showReminders(res.data);
     } catch (err) {
       console.error('Fetch plans error:', err);
       if (err.response?.status === 401) {
@@ -63,13 +75,13 @@ const StudyPlanner = () => {
     }
   }, [navigate, location]);
 
-  useEffect(() => {
-    fetchPlans();
-  }, [fetchPlans]);
+  useEffect(() => { fetchPlans(); }, [fetchPlans]);
 
   const handlePlanCreated = (newPlan) => {
     setPlans((prev) => [...prev, newPlan]);
-    toast.success('Study plan created!', { style: { background: '#10B981', color: '#fff' } });
+    toast.success('Study plan created!', {
+      style: { background: T.surface, color: T.text, border: `1px solid ${T.border}` },
+    });
     showReminders([newPlan]);
   };
 
@@ -78,141 +90,189 @@ const StudyPlanner = () => {
     showReminders([updatedPlan]);
   };
 
-  const handlePlanDeleted = () => {
-    fetchPlans();
-  };
+  const handlePlanDeleted = () => { fetchPlans(); };
 
   const activePlans = plans.filter((p) => (p.progress || 0) < 100);
   const completedPlans = plans.filter((p) => (p.progress || 0) === 100);
 
   const showReminders = (plansArray) => {
     const now = new Date();
-    const upcomingTopics = [];
     plansArray.forEach((plan) => {
       plan.subjects.forEach((subject) => {
         subject.topics.forEach((topic) => {
-          const deadline = new Date(topic.endTime || topic.deadline); // Use endTime if available
+          const deadline = new Date(topic.endTime || topic.deadline);
           const diffDays = (deadline - now) / (1000 * 60 * 60 * 24);
           if (diffDays >= 0 && diffDays <= 3) {
-            upcomingTopics.push({ 
-              plan: plan.fieldOfStudy, 
-              subject: subject.name, 
-              topic: topic.name, 
-              deadline 
-            });
+            toast(
+              `⏰ "${topic.name}" in ${subject.name} is due ${deadline.toLocaleDateString()}`,
+              {
+                duration: 8000,
+                style: { background: '#1c1408', color: '#fbbf24', border: '1px solid #78350f', fontWeight: '500' },
+              }
+            );
           }
         });
       });
     });
-
-    upcomingTopics.forEach((t) => {
-      toast(
-        `📌 "${t.topic}" of ${t.subject} in ${t.plan} is due on ${t.deadline.toLocaleDateString()}`,
-        { duration: 8000, style: { background: '#FBBF24', color: '#000', fontWeight: 'bold' } }
-      );
-    });
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
-      <CircularProgress sx={{ color: '#2DD4BF' }} />
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+      <CircularProgress sx={{ color: T.accent }} size={34} thickness={4} />
+      <span style={{ color: T.textDim, fontSize: '0.875rem', fontFamily: 'Inter, system-ui, sans-serif' }}>Loading your plans…</span>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
-      <Container maxWidth="md"><Alert severity="error">{error}</Alert></Container>
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      <Alert severity="error" sx={{ maxWidth: 480, borderRadius: '0.75rem' }}>{error}</Alert>
     </div>
   );
 
   return (
-    <div className="min-h-screen py-12 px-4" style={{ background: '#0F172A' }}>
-      <Toaster position="top-right" />
-      <Container maxWidth="lg">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <Paper
-            className="p-8 bg-opacity-95 rounded-2xl"
-            style={{
-              background: '#1E1B4B',
-              border: '2px solid transparent',
-              borderImage: 'linear-gradient(to right, #2DD4BF, #A855F7) 1',
-              boxShadow: '8px 8px 16px rgba(30,27,75,0.6), -8px -8px 16px rgba(75,63,145,0.6)',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            <Typography
-              variant="h3"
+    <div style={{ minHeight: '100vh', background: T.bg, padding: '2.5rem 1rem', fontFamily: 'Inter, "Segoe UI", system-ui, sans-serif' }}>
+      <Toaster position="top-right" toastOptions={{ style: { borderRadius: '0.5rem', fontSize: '0.85rem' } }} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        style={{ maxWidth: '900px', margin: '0 auto' }}
+      >
+        {/* ── Page card ── */}
+        <div style={{ background: T.surface, borderRadius: '1rem', border: `1px solid ${T.border}`, boxShadow: '0 8px 40px rgba(0,0,0,0.45)', padding: '2.25rem 2.5rem' }}>
+
+          {/* ── Header ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '1.5rem', background: '#1e3a5f', width: '2.75rem', height: '2.75rem', borderRadius: '0.625rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              📚
+            </div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 700, color: T.text, letterSpacing: '-0.02em' }}>
+                Study Planner
+              </h1>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: T.textDim }}>
+                Organize subjects, track deadlines, and stay on schedule
+              </p>
+            </div>
+          </div>
+
+          <div style={{ height: '1px', background: T.border, marginBottom: '1.75rem' }} />
+
+          {/* ── Google Calendar ── */}
+          <GoogleAuthButton />
+
+          {/* ── Create new plan form ── */}
+          <StudyPlanForm onPlanCreated={handlePlanCreated} />
+
+          {/* ── Toggle buttons ── */}
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.75rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setShowActivePlans(!showActivePlans)}
               style={{
-                fontFamily: "'Dancing Script', cursive",
-                background: 'linear-gradient(to right, #2DD4BF, #A855F7)',
-                WebkitBackgroundClip: 'text',
-                color: 'transparent',
-                textAlign: 'center',
-                marginBottom: '1.5rem',
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 1.1rem', borderRadius: '0.5rem', cursor: 'pointer',
+                fontSize: '0.85rem', fontWeight: 500, fontFamily: 'inherit', transition: 'all 0.15s',
+                background: showActivePlans ? T.accentBg : 'transparent',
+                border: `1px solid ${showActivePlans ? T.accent : T.border}`,
+                color: showActivePlans ? T.accentLt : T.textDim,
               }}
             >
-              Study Planner
-            </Typography>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: showActivePlans ? T.accent : T.borderHi, flexShrink: 0 }} />
+              {showActivePlans ? 'Hide Active Plans' : 'Show Active Plans'}
+              {activePlans.length > 0 && (
+                <span style={{ background: '#312e81', color: T.accentLt, fontSize: '0.72rem', fontWeight: 600, padding: '0.1rem 0.45rem', borderRadius: '999px' }}>
+                  {activePlans.length}
+                </span>
+              )}
+            </button>
 
-            <GoogleAuthButton />
+            <button
+              onClick={() => setShowCompletedPlans(!showCompletedPlans)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 1.1rem', borderRadius: '0.5rem', cursor: 'pointer',
+                fontSize: '0.85rem', fontWeight: 500, fontFamily: 'inherit', transition: 'all 0.15s',
+                background: showCompletedPlans ? T.successBg : 'transparent',
+                border: `1px solid ${showCompletedPlans ? T.success : T.border}`,
+                color: showCompletedPlans ? T.successLt : T.textDim,
+              }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: showCompletedPlans ? T.success : T.borderHi, flexShrink: 0 }} />
+              {showCompletedPlans ? 'Hide Completed Plans' : 'Show Completed Plans'}
+              {completedPlans.length > 0 && (
+                <span style={{ background: '#064e3b', color: T.successLt, fontSize: '0.72rem', fontWeight: 600, padding: '0.1rem 0.45rem', borderRadius: '999px' }}>
+                  {completedPlans.length}
+                </span>
+              )}
+            </button>
+          </div>
 
-            <StudyPlanForm onPlanCreated={handlePlanCreated} />
-
-            <div className="flex gap-4 mt-6">
-              <Button
-                variant="contained"
-                fullWidth
-                startIcon={<AddCircle />}
-                style={{ background: '#2DD4BF', color: '#E5E7EB', borderRadius: '0.75rem' }}
-                onClick={() => setShowActivePlans(!showActivePlans)}
-              >
-                {showActivePlans ? 'Hide Active Plans' : 'Show Active Plans'}
-              </Button>
-              <Button
-                variant="contained"
-                fullWidth
-                startIcon={<DoneAll />}
-                style={{ background: '#10B981', color: '#E5E7EB', borderRadius: '0.75rem' }}
-                onClick={() => setShowCompletedPlans(!showCompletedPlans)}
-              >
-                {showCompletedPlans ? 'Hide Completed Plans' : 'Show Completed Plans'}
-              </Button>
-            </div>
-
-            {showActivePlans && (
-              <>
-                <Typography variant="h5" className="mt-8 mb-4" style={{ color: '#2DD4BF', textAlign: 'center' }}>
+          {/* ── Active Plans section ── */}
+          {showActivePlans && (
+            <motion.section
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              style={{ marginTop: '2rem' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: T.accent, flexShrink: 0 }} />
+                <h2 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: T.accentLt, letterSpacing: '0.01em' }}>
                   Active Plans
-                </Typography>
+                </h2>
+                <span style={{ background: '#312e81', color: T.accentLt, fontSize: '0.72rem', fontWeight: 600, padding: '0.1rem 0.5rem', borderRadius: '999px' }}>
+                  {activePlans.length}
+                </span>
+              </div>
+              {activePlans.length === 0 ? (
+                <p style={{ color: T.textDim, fontSize: '0.875rem', textAlign: 'center', padding: '2rem 1rem', borderRadius: '0.75rem', border: `1px dashed ${T.border}`, margin: 0 }}>
+                  No active plans yet — create your first plan above.
+                </p>
+              ) : (
                 <StudyPlanList
                   plans={activePlans}
                   setPlans={setPlans}
                   onPlanUpdated={handlePlanUpdated}
                   onPlanDeleted={handlePlanDeleted}
                 />
-              </>
-            )}
+              )}
+            </motion.section>
+          )}
 
-            {showCompletedPlans && (
-              <>
-                <Typography variant="h5" className="mt-8 mb-4" style={{ color: '#10B981', textAlign: 'center' }}>
+          {/* ── Completed Plans section ── */}
+          {showCompletedPlans && (
+            <motion.section
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              style={{ marginTop: '2rem' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: T.success, flexShrink: 0 }} />
+                <h2 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: T.successLt, letterSpacing: '0.01em' }}>
                   Completed Plans
-                </Typography>
+                </h2>
+                <span style={{ background: '#064e3b', color: T.successLt, fontSize: '0.72rem', fontWeight: 600, padding: '0.1rem 0.5rem', borderRadius: '999px' }}>
+                  {completedPlans.length}
+                </span>
+              </div>
+              {completedPlans.length === 0 ? (
+                <p style={{ color: T.textDim, fontSize: '0.875rem', textAlign: 'center', padding: '2rem 1rem', borderRadius: '0.75rem', border: `1px dashed ${T.border}`, margin: 0 }}>
+                  No completed plans yet — keep studying!
+                </p>
+              ) : (
                 <StudyPlanList
                   plans={completedPlans}
                   setPlans={setPlans}
                   onPlanUpdated={handlePlanUpdated}
                   onPlanDeleted={handlePlanDeleted}
                 />
-              </>
-            )}
-          </Paper>
-        </motion.div>
-      </Container>
+              )}
+            </motion.section>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 };
